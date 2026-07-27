@@ -11,8 +11,13 @@ NEW_WIDTH = 480
 NEW_HEIGHT = 320
 
 
-def parse_file(filePath: str) -> list[int]:
-    with open(filePath, "rt") as f:
+# to easily change the decoding method of the bytes for testing
+def hex_to_index(firstByte: str, secondByte: str) -> int:
+    return int(firstByte, 16) + (int(secondByte, 16) << 8) - 256
+
+
+def parse_table(tableFilePath: str) -> list[int]:
+    with open(tableFilePath, "rt") as f:
         file = f.read()
 
     lines = file.splitlines()
@@ -31,7 +36,7 @@ def parse_file(filePath: str) -> list[int]:
         secondByte = line[2:hindex]
         line = line[hindex + 1 :]
 
-        indicies.append(int(firstByte, 16) + (int(secondByte, 16) << 8) - 256)
+        indicies.append(hex_to_index(firstByte, secondByte))
 
         while line.find("H") != -1:
             hindex = line.find("H")
@@ -41,7 +46,8 @@ def parse_file(filePath: str) -> list[int]:
             hindex = line.find("H")
             secondByte = line[2:hindex]
             line = line[hindex + 1 :]
-            indicies.append(int(firstByte, 16) + (int(secondByte, 16) << 8) - 256)
+
+            indicies.append(hex_to_index(firstByte, secondByte))
 
     return indicies
 
@@ -54,42 +60,58 @@ def convert_to_coords(indicies: list[int]) -> list[tuple[int]]:
         y = num // OLD_WIDTH
 
         # scaling and rounding to nearest 8
-        x = int(((x * (NEW_WIDTH / OLD_WIDTH)) // 8) * 8)
-        y = int(y * (NEW_HEIGHT / OLD_HEIGHT))
+        # x = int(x * (NEW_WIDTH / OLD_WIDTH))  # // 8) * 8)
+        # y = int(y * (NEW_HEIGHT / OLD_HEIGHT))
 
         coords.append((x, y))
 
     return coords
 
 
-# scrap this entire freaking thing
-def generate_c_array(coords: list[tuple[int]]) -> list[str]:
-    carray: list[str] = []
-    carray.append(f"static const Obj_t objects[{len(coords)}] = " + "{")
-    for c in range(len(coords)):
-        # padding the digits of each number for better formatting
-        carray.append(
-            "   {"
-            + f"{(c + 1):03d}, {coords[c][0]:03d}, {coords[c][1]:03d}, &File_{(c+2):03d}_ObjNum_{(c+1):03d}_"
-            + "},"
-        )
-    carray.append("};")
+def modify_c_array(arrayFilePath: str, coords: list[tuple[int]]) -> list[str]:
+    with open(arrayFilePath, "rt") as f:
+        file = f.read()
 
-    return "\n".join(carray)
+    lines = file.splitlines()
+
+    for i in range(len(coords)):
+        line = lines[i + 1]
+
+        # getting positions before and after the x and y values
+        beforeX = line.find(" ", line.find("{"), len(line) - 1)
+        afterX = line.find(",", beforeX, len(line) - 1)
+
+        beforeY = line.find(" ", afterX, len(line) - 1)
+        afterY = line.find(",", beforeY, len(line) - 1)
+
+        # inserting new x yalue
+        lines[i + 1] = line[: beforeY + 1] + str(coords[i][1]) + line[afterY:]
+
+        line = lines[i + 1]
+
+        # inserting new x value
+        lines[i + 1] = line[: beforeX + 1] + str(coords[i][0]) + line[afterX:]
+
+    return "\n".join(lines)
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("inputFile", help="a .trc file to emulate")
+    parser.add_argument("table", help="a table to parse")
+    parser.add_argument("array", help="an array template to modify")
 
     args = parser.parse_args()
 
-    print(generate_c_array(convert_to_coords(parse_file(args.inputFile))))
-
     # checking if input is a file
-    if not os.path.isfile(args.inputFile):
-        print(f"ERROR: File not found: {args.inputFile}", file=sys.stderr)
+    if not os.path.isfile(args.table):
+        print(f"ERROR: File not found: {args.table}", file=sys.stderr)
         sys.exit(1)
+
+    if not os.path.isfile(args.array):
+        print(f"ERROR: File not found: {args.array}", file=sys.stderr)
+        sys.exit(1)
+
+    print(modify_c_array(args.array, convert_to_coords(parse_table(args.table))))
 
 
 if __name__ == "__main__":

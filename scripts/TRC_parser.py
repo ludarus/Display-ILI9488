@@ -82,7 +82,7 @@ def send_messages(messages: list[CAN_message]) -> None:
     # while True:
     for msgIdx in range(1, len(messages)):
 
-        time.sleep((messages[msgIdx].time - messages[msgIdx - 1].time) / 1000.0)
+        time.sleep((messages[msgIdx].time - messages[msgIdx - 1].time) / 100.0)
 
         print(
             f"sending msg with id = {hex(messages[msgIdx].id)}, data = {messages[msgIdx].data}"

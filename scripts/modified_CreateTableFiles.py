@@ -403,7 +403,7 @@ baseList = table2Array()
 modifiedList = convertToNewScreen(baseList)
 cArray = generateArray(modifiedList)
 
-print(cArray)
+print(modifiedList)
 
 
 #  Tables to create

@@ -384,8 +384,10 @@ static const Obj_t objects[] = {
 // TODO get correct version string
 const uint8_t version[8] = "DSP12345";
 
-// debugging flag
+// debugging ---
+// overflow flag
 volatile static bool overFlowed = false;
+// debugging ---
 
 // private declarations
 
@@ -486,7 +488,7 @@ HAL_StatusTypeDef CMD_DispBg(CanRxMessage_t *msg) {
   uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
                          "displayed background with objNum: %u\n", objNum);
 
-  HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+  // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
   return HAL_OK;
 }
@@ -547,7 +549,7 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
                            "Disp text: \"%.*s\", objNum = %u\n", target,
                            charArray, objNum);
 
-    HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+    // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
     // restting target
     target = 0;
@@ -556,7 +558,7 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
   }
 
   // logging
-  HAL_UART_Transmit_IT(uart, (uint8_t *)"recieved partial text packet\n", 29);
+  // HAL_UART_Transmit_IT(uart, (uint8_t *)"recieved partial text packet\n", 29);
 
   return HAL_OK;
 }
@@ -595,7 +597,7 @@ HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
   uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
                          "displayed image with objNum: %u\n", objNum);
 
-  HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+  // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
   return HAL_OK;
 }
@@ -625,7 +627,7 @@ HAL_StatusTypeDef CMD_DispGrp(CanRxMessage_t *msg) {
                          "displayed group with grpNum: %u and index: %u\n",
                          grpNum, index);
 
-  HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+  // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
   return HAL_OK;
 }
@@ -649,7 +651,7 @@ HAL_StatusTypeDef CMD_SendVersion(CanRxMessage_t *msg) {
 
   uint32_t mailbox;
 
-  HAL_UART_Transmit_IT(uart, (uint8_t *)"sending version\n", 16);
+  // HAL_UART_Transmit_IT(uart, (uint8_t *)"sending version\n", 16);
 
   return HAL_CAN_AddTxMessage(can, &versionHeader, version, &mailbox);
 }
@@ -685,7 +687,7 @@ HAL_StatusTypeDef CMD_Brightness(CanRxMessage_t *msg) {
   uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
                          "changed display brightness to %u\n", brightnessVal);
 
-  HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+  // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
   return HAL_OK;
 }
@@ -702,13 +704,14 @@ HAL_StatusTypeDef CMD_Alarm(CanRxMessage_t *msg) {
                "changed alarm to a frequency of %u and a duty of %u\n",
                frequency, dutyCycle);
 
-  HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+  // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
   return HAL_OK;
 }
 
 // list of commands to be received
-static const CanCommand_t commands[] = {
+// const uncommented for debugging logs
+static /*const*/ CanCommand_t commands[] = {
 
     // display background image
     // 0x418
@@ -816,7 +819,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
   // if the alarm has been on for 100 ms
   if (HAL_GetTick() - alarmTick >= 100 && alarmTick != 0) {
 
-    HAL_UART_Transmit_IT(uart, (uint8_t *)"Brightness beep completed\n", 26);
+    // HAL_UART_Transmit_IT(uart, (uint8_t *)"Brightness beep completed\n", 26);
 
     ALARM_StopBeep(alarmTimer);
 
@@ -900,7 +903,10 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
             commands[0].cmdNum + (sizeof(commands) / sizeof(commands[0])) - 1) {
 
       // executing command
-      HAL_TRY(commands[cmdNum - commands[0].cmdNum].handle(&queue[msgIdx]));
+      commands[cmdNum - commands[0].cmdNum].handle(&queue[msgIdx]);
+
+		// incrementing call log
+      commands[cmdNum - commands[0].cmdNum].numerOfTimesCalled++;
 
     } else {
       // if no commands match

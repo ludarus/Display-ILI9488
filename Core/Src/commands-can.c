@@ -396,6 +396,7 @@ static CanRxMessage_t queue[48];
 // static brightness members (shared state)
 static uint32_t brightnessTick;
 static uint8_t brightnessVal;
+static uint8_t prevBrightnessVal;
 static uint16_t flashOffset;
 
 // alarm members
@@ -434,9 +435,10 @@ HAL_StatusTypeDef brightnessInit() {
                    flashOffset);
 
       HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
-      return ILI9488_SetBrightness(
-          spi, backlightTimer,
-          *(__IO uint8_t *)(offset + BRIGHTNESS_PAGE_ADDR));
+
+      prevBrightnessVal = *(__IO uint8_t *)(offset + BRIGHTNESS_PAGE_ADDR);
+
+      return ILI9488_SetBrightness(spi, backlightTimer, prevBrightnessVal);
     }
   }
 
@@ -538,8 +540,8 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
     // displaying
     // HAL_StatusTypeDef displayStatus =
     HAL_SPIN(ILI9488_LoadText(spi, objects[objNum - 1].x, objects[objNum - 1].y,
-                             charArray, target, font, FONTSIZE, CHARWIDTH,
-                             CHARHEIGHT, false, true, true));
+                              charArray, target, font, FONTSIZE, CHARWIDTH,
+                              CHARHEIGHT, false, true, true));
 
     uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
                            "Disp text: \"%.*s\", objNum = %u\n", target,
@@ -587,7 +589,7 @@ HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
 
   // display according image
   HAL_SPIN(ILI9488_LoadImage(spi, (*obj).x, (*obj).y, (*obj).img, true, false,
-                            true));
+                             true));
 
   // diagnostic
   uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
@@ -822,7 +824,8 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
   }
 
   // if it's been 5 seconds since last brightness change
-  if (brightnessTick != 0 && HAL_GetTick() - brightnessTick > 5000) {
+  if (brightnessVal != prevBrightnessVal && brightnessTick != 0 &&
+      HAL_GetTick() - brightnessTick > 5000) {
     brightnessTick = 0;
 
     // unlocking flash
@@ -855,6 +858,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
     // minimum flash write resolution is 16 bit (halfword)
     // making second part off to indicate a write
     uint16_t halfword = (uint16_t)brightnessVal | 0x0000u;
+
     // TODO error handling here
     HAL_StatusTypeDef progStatus =
         HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD,
@@ -867,6 +871,8 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
 
     // incrementing offset
     flashOffset += 2;
+
+    prevBrightnessVal = brightnessVal;
 
     // diagnostic
     HAL_UART_Transmit_IT(

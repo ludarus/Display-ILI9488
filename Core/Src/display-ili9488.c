@@ -128,22 +128,22 @@ static inline void fillScreen(uint8_t *buffer, uint32_t *position,
     leading = leading > count ? count : leading;
     uint8_t mask = (uint8_t)(((1u << leading) - 1u) << offset);
     if (isOn) {
-      buffer[(*position) / 8] |= mask;
+      buffer[(*position) >> 3] |= mask;
     } else if (overWrite) {
-      buffer[(*position) / 8] &= (uint8_t)~mask;
+      buffer[(*position) >> 3] &= (uint8_t)~mask;
     }
     count -= leading;
     (*position) += leading;
   }
 
   // middle bytes
-  for (uint8_t byte = 0; byte < count / 8; byte++) {
+  for (uint8_t byte = 0; byte < count >> 3; byte++) {
     if (isOn) {
       // write byte
-      buffer[(*position) / 8] = 0xFF;
+      buffer[(*position) >> 3] = 0xFF;
     } else if (overWrite) {
       // clear byte
-      buffer[(*position) / 8] = 0;
+      buffer[(*position) >> 3] = 0;
     }
 
     // incrementing global position
@@ -155,9 +155,9 @@ static inline void fillScreen(uint8_t *buffer, uint32_t *position,
   // check to make sure there's unaligned bits
   if (trailing != 0) {
     if (isOn) {
-      buffer[(*position) / 8] |= 0xFF >> (8 - trailing);
+      buffer[(*position) >> 3] |= 0xFF >> (8 - trailing);
     } else if (overWrite) {
-      buffer[(*position) / 8] &= 0xFF << trailing;
+      buffer[(*position) >> 3] &= 0xFF << trailing;
     }
     (*position) += trailing;
   }
@@ -492,9 +492,9 @@ ILI9488_LoadText(SPI_HandleTypeDef *spi, uint16_t x_p, uint16_t y_p,
     }
 
     const uint32_t bytesPerChar_b =
-        (charWidth_p * charHeight_p) / 8; // in bytes
+        (charWidth_p * charHeight_p) >> 3; // in bytes
 
-    const uint8_t charWidth_b = charWidth_p / 8; // in bytes
+    const uint8_t charWidth_b = charWidth_p >> 3; // in bytes
     const uint16_t rowSkip_b = ILI9488_WIDTH_BYTES - charWidth_b;
 
     uint8_t *screenData = state.screenCopy;
@@ -509,7 +509,7 @@ ILI9488_LoadText(SPI_HandleTypeDef *spi, uint16_t x_p, uint16_t y_p,
     for (uint16_t charIdx = 0; charIdx < textSize; charIdx++) {
       // loading character
       uint16_t col_b = 0; // in bytes
-      uint32_t pos_b = (ILI9488_WIDTH_BYTES * y_p) + (x_p / 8) +
+      uint32_t pos_b = (ILI9488_WIDTH_BYTES * y_p) + (x_p >> 3) +
                        (charIdx * charWidth_b); // in bytes
 
       // defining current character by using the character array with an ascii
@@ -588,7 +588,7 @@ HAL_StatusTypeDef ILI9488_Refresh(SPI_HandleTypeDef *spi) {
     // setting state to reuse the other callback
     state.imageSize = ILI9488_WIDTH_PX * ILI9488_HEIGHT_PX;
     state.imageTarget = state.imageSize / 2;
-    state.width = ILI9488_WIDTH_PX / 8;
+    state.width = ILI9488_WIDTH_PX >> 3;
     state.height = ILI9488_HEIGHT_PX;
     state.x = 0;
     state.y = 0;
@@ -599,12 +599,12 @@ HAL_StatusTypeDef ILI9488_Refresh(SPI_HandleTypeDef *spi) {
 
     state.activeBuf = 0;
     expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                  CHUNK / 4);
+                  CHUNK >> 2);
 
     state.imageProgress += CHUNK;
     state.activeBuf = !state.activeBuf;
     expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                  CHUNK / 4);
+                  CHUNK >> 2);
 
     HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[!state.activeBuf], CHUNK));
 
@@ -626,13 +626,14 @@ HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi) {
     HAL_TRY(ILI9488_SetRange(spi, state.x, state.x + state.width - 1, state.y,
                              state.y + state.height - 1));
 
-    // if (state.x + state.width > ILI9488_WIDTH_PX) {
-    //   state.width = ILI9488_WIDTH_PX - state.x;
-    // }
-    //
-    // if (state.y + state.height > ILI9488_HEIGHT_PX) {
-    //   state.height = ILI9488_HEIGHT_PX - state.y;
-    // }
+    // conditions should not ever trigger, but still here just in case
+    if (state.x + state.width > ILI9488_WIDTH_PX) {
+      state.width = ILI9488_WIDTH_PX - state.x;
+    }
+
+    if (state.y + state.height > ILI9488_HEIGHT_PX) {
+      state.height = ILI9488_HEIGHT_PX - state.y;
+    }
 
     // converting pixels to bytes
     state.x /= 8;
@@ -662,19 +663,19 @@ HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi) {
 
     if (state.imageTarget <= CHUNK) {
       expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                    state.imageTarget / 4);
+                    state.imageTarget >> 2);
       HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[state.activeBuf],
                                    state.imageTarget));
       state.imageProgress = state.imageTarget;
     } else {
       expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                    CHUNK / 4);
+                    CHUNK >> 2);
       state.imageProgress += CHUNK;
       state.activeBuf = !state.activeBuf;
 
       uint32_t remaining = state.imageTarget - state.imageProgress;
       expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                    (remaining < CHUNK ? remaining : CHUNK) / 4);
+                    (remaining < CHUNK ? remaining : CHUNK) >> 2);
       HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[!state.activeBuf], CHUNK));
     }
 
@@ -716,7 +717,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
       state.activeBuf = !state.activeBuf;
 
       expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                    CHUNK / 4);
+                    CHUNK >> 2);
     }
   }
 }

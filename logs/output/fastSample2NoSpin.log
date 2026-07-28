@@ -4,6 +4,7 @@ displayed background with objNum: 5
 sending version
 sending version
 sending version
+sending version
 changed alarm to a frequency of 1 and a duty of 10
 changed alarm to a frequency of 1 and a duty of 10
 sending version
@@ -122,7 +123,9 @@ Disp text: "   Inform Service __", objNum = 61
 displayed background with objNum: 4
 displayed background with objNum: 4
 recieved partial text packet
+recieved partial text packet
 Disp text: "  Inform Service ___", objNum = 61
+recieved partial text packet
 Disp text: "       ", objNum = 146
 displayed image with objNum: 44
 sending version
@@ -139,8 +142,10 @@ sending version
 displayed image with objNum: 31
 displayed image with objNum: 134
 displayed image with objNum: 121
+sending version
+displayed image with objNum: 98
 displayed image with objNum: 101
-displayed image with objNum: 121
+sending version
 sending version
 recieved partial text packet
 recieved partial text packet
@@ -180,7 +185,12 @@ sending version
 recieved partial text packet
 Disp text: "113in", objNum = 58
 displayed image with objNum: 34
-dianged alarm to a frequency of 7dianged alarm to a frequency of 7displayed image with objNum: 98
+displayed image with objNum: 134
+changed alarm to a frequency of 78 and a duty of 7
+displayed image with objNum: 109
+sending version
+displayed image with objNum: 98
+changed alarm to a frequency of 0 and a duty of 0
 displayed image with objNum: 99
 sending version
 changed alarm to a frequency of 31 and a duty of 7

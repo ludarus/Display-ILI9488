@@ -30,6 +30,7 @@ typedef struct {
 typedef struct {
   // objNum. Should be the index in the array, so probably remove this field later
   uint16_t id;
+  uint8_t type;
   uint16_t x;
   uint16_t y;
   const Image_t *img;

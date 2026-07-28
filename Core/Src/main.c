@@ -247,8 +247,8 @@ int main(void)
   ILI9488_LoadText(&hspi1, 0, 150, "hi :P ksdfj ajd", 15, font, FONTSIZE,
                    CHARWIDTH, CHARHEIGHT, true, false, true);
 
-  ILI9488_LoadImage(&hspi1, 64, 69, &File_043_ObjNum_042_144x208_6_19_26, false,
-                    true, false);
+  ILI9488_LoadImage(&hspi1, 432, 69, &File_025_ObjNum_024_48x208_6_19_26, false,
+                    true, true);
 
   ILI9488_Draw(&hspi1);
 

@@ -1,3 +1,4 @@
+# NOTICE: THIS FILE IS NOT USED IN PRODUCTION, MADE FOR TESTING PURPOSES
 # will parse a table and output correct coordinates
 import argparse
 import os

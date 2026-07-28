@@ -1,84 +1,78 @@
 recieved partial text packet
 recieved partial text packet
-Displayed text:                     
+Disp text: "                    ", objNum = 61
 changed alarm to a frequency of 21 and a duty of 7
 displayed background with objNum: 4
 recieved partial text packet
 recieved partial text packet
-Displayed text:                    C
+Disp text: "                   C", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text:                   Co
+Disp text: "                  Co", objNum = 61
 changed alarm to a frequency of 29 and a duty of 7
 recieved partial text packet
 recieved partial text packet
-Displayed text:                  Cod
+Disp text: "                 Cod", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text:                 Code
+Disp text: "                Code", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text:                Code 
+Disp text: "               Code ", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text:               Code F
+Disp text: "              Code F", objNum = 61
 changed alarm to a frequency of 21 and a duty of 7
 recieved partial text packet
 recieved partial text packet
-Displayed text:              Code FH
+Disp text: "             Code FH", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text:             Code FH 
+Disp text: "            Code FH ", objNum = 61
 changed alarm to a frequency of 29 and a duty of 7
 recieved partial text packet
 recieved partial text packet
-Displayed text:            Code FH  
+Disp text: "           Code FH  ", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text:           Code FH  I
+Disp text: "          Code FH  I", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text:          Code FH  In
+Disp text: "         Code FH  In", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text:         Code FH  Inf
+Disp text: "        Code FH  Inf", objNum = 61
 changed alarm to a frequency of 21 and a duty of 7
 recieved partial text packet
 recieved partial text packet
-Displayed text:        Code FH  Info
+Disp text: "       Code FH  Info", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text:       Code FH  Infor
+Disp text: "      Code FH  Infor", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text:      Code FH  Inform
+Disp text: "     Code FH  Inform", objNum = 61
 changed alarm to a frequency of 29 and a duty of 7
 recieved partial text packet
 recieved partial text packet
-Displayed text:     Code FH  Inform 
+Disp text: "    Code FH  Inform ", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text:    Code FH  Inform s
+Disp text: "   Code FH  Inform s", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text:   Code FH  Inform se
+Disp text: "  Code FH  Inform se", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text:  Code FH  Inform ser
+Disp text: " Code FH  Inform ser", objNum = 61
 changed alarm to a frequency of 0 and a duty of 7
 recieved partial text packet
 recieved partial text packet
-Displayed text: Code FH  Inform serv
+Disp text: "Code FH  Inform serv", objNum = 61
 recieved partial text packet
 recieved partial text packet
-Displayed text: ode FH  Inform servi
-displayed background with objNum: 4
-changed alarm to a frequency of 0 and a duty of 7
-displayed background with objNum: 5
-changed display brightness to 3
-changed display brightness to 1
-changed display brightness to 1
-changed display brightness to 1
+Disp text: "ode FH  Inform servi", objNum = 61
+dianged alarm to a frequency of 0 andisplayed background with objNum: 5
 changed display brightness to 1
 changed display brightness to 1
 changed display brightness to 1
@@ -88,198 +82,198 @@ changed display brightness to 1
 changed display brightness to 1
 recieved partial text packet
 recieved partial text packet
-Displayed text: Selftest            
+Disp text: "Selftest            ", objNum = 61
 displayed background with objNum: 147
 recieved partial text packet
-Displayed text: 3000lb
+Disp text: "3000lb", objNum = 59
 displayed image with objNum: 57
-Displayed text: 0.0
+Disp text: "0.0", objNum = 60
 displayed image with objNum: 18
 displayed image with objNum: 30
 changed alarm to a frequency of 21 and a duty of 7
 displayed image with objNum: 134
 displayed image with objNum: 129
-displayed image with objNum: 98
 displayed image with objNum: 99
-recieved partial text packet
-Displayed text:   0in
+displayed image with objNum: 129
+displayed image with objNum: 99
 displayed image with objNum: 31
 recieved partial text packet
-Displayed text:         
+Disp text: "        ", objNum = 146
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text: Selftest            
+Disp text: "Selftest            ", objNum = 61
 displayed image with objNum: 44
 changed alarm to a frequency of 29 and a duty of 7
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:                    C
+Disp text: "                   C", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:                   Co
+Disp text: "                  Co", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:                  Cod
+Disp text: "                 Cod", objNum = 61
 displayed image with objNum: 44
 changed alarm to a frequency of 21 and a duty of 7
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:                 Code
+Disp text: "                Code", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:                Code 
+Disp text: "               Code ", objNum = 61
 displayed image with objNum: 44
 changed alarm to a frequency of 29 and a duty of 7
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:               Code F
+Disp text: "              Code F", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:              Code FH
+Disp text: "             Code FH", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:             Code FH 
+Disp text: "            Code FH ", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 changed alarm to a frequency of 21 and a duty of 7
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:            Code FH  
+Disp text: "           Code FH  ", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:           Code FH  I
+Disp text: "          Code FH  I", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:          Code FH  In
+Disp text: "         Code FH  In", objNum = 61
 changed alarm to a frequency of 29 and a duty of 7
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:         Code FH  Inf
+Disp text: "        Code FH  Inf", objNum = 61
+Successfully wrote brightness to flash
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:        Code FH  Info
+Disp text: "       Code FH  Info", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:       Code FH  Infor
+Disp text: "      Code FH  Infor", objNum = 61
 displayed image with objNum: 44
 changed alarm to a frequency of 0 and a duty of 7
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:      Code FH  Inform
+Disp text: "     Code FH  Inform", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:     Code FH  Inform 
+Disp text: "    Code FH  Inform ", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:    Code FH  Inform s
+Disp text: "   Code FH  Inform s", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:   Code FH  Inform se
+Disp text: "  Code FH  Inform se", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:  Code FH  Inform ser
+Disp text: " Code FH  Inform ser", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text: Code FH  Inform serv
+Disp text: "Code FH  Inform serv", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text: ode FH  Inform servi
+Disp text: "ode FH  Inform servi", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text: de FH  Inform servic
+Disp text: "de FH  Inform servic", objNum = 61
 recieved partial text packet
-Displayed text:    0%
+Disp text: "   0%", objNum = 58
 displayed image with objNum: 7
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text: e FH  Inform service
+Disp text: "e FH  Inform service", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:  FH  Inform service 
+Disp text: " FH  Inform service ", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text: FH  Inform service  
+Disp text: "FH  Inform service  ", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text: H  Inform service   
+Disp text: "H  Inform service   ", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44
 recieved partial text packet
 recieved partial text packet
-Displayed text:   Inform service    
+Disp text: "  Inform service    ", objNum = 61
 displayed image with objNum: 44
 displayed image with objNum: 44
 displayed image with objNum: 44

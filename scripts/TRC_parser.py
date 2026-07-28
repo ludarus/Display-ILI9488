@@ -79,22 +79,22 @@ def send_messages(messages: list[CAN_message]) -> None:
 
     # sending all other messages
     # stress testing
-    while True:
-        for msgIdx in range(1, len(messages)):
+    # while True:
+    for msgIdx in range(1, len(messages)):
 
-            time.sleep((messages[msgIdx].time - messages[msgIdx - 1].time) / 1000.0)
+        time.sleep((messages[msgIdx].time - messages[msgIdx - 1].time) / 1000.0)
 
-            print(
-                f"sending msg with id = {hex(messages[msgIdx].id)}, data = {messages[msgIdx].data}"
+        print(
+            f"sending msg with id = {hex(messages[msgIdx].id)}, data = {messages[msgIdx].data}"
+        )
+
+        bus.send(
+            can.Message(
+                arbitration_id=messages[msgIdx].id,
+                is_extended_id=False,
+                data=messages[msgIdx].data,
             )
-
-            bus.send(
-                can.Message(
-                    arbitration_id=messages[msgIdx].id,
-                    is_extended_id=False,
-                    data=messages[msgIdx].data,
-                )
-            )
+        )
 
     bus.shutdown()
 

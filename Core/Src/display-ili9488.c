@@ -626,13 +626,13 @@ HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi) {
     HAL_TRY(ILI9488_SetRange(spi, state.x, state.x + state.width - 1, state.y,
                              state.y + state.height - 1));
 
-    if (state.x + state.width > ILI9488_WIDTH_PX) {
-      state.width = ILI9488_WIDTH_PX - state.x;
-    }
-
-    if (state.y + state.height > ILI9488_HEIGHT_PX) {
-      state.height = ILI9488_HEIGHT_PX - state.y;
-    }
+    // if (state.x + state.width > ILI9488_WIDTH_PX) {
+    //   state.width = ILI9488_WIDTH_PX - state.x;
+    // }
+    //
+    // if (state.y + state.height > ILI9488_HEIGHT_PX) {
+    //   state.height = ILI9488_HEIGHT_PX - state.y;
+    // }
 
     // converting pixels to bytes
     state.x /= 8;

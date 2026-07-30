@@ -14,6 +14,15 @@
 #include "stm32f0xx_hal_tim.h"
 #include <stdbool.h>
 
+// object types
+#define TABLE_OBJ_TYPE 13
+#define BACKGROUND_OBJ_TYPE 0
+#define IMAGE_OBJ_TYPE 3
+#define GROUPTABLE_OBJ_TYPE 4
+#define TEXT_OBJ_TYPE 1
+// TODO find out what type 9 is
+#define UNKNOWN_OBJ_TYPE 9
+
 HAL_StatusTypeDef CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
                                 SPI_HandleTypeDef *displaySpiInterface,
                                 UART_HandleTypeDef *serialLoggingInterface,

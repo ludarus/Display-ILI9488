@@ -9,12 +9,12 @@ def main():
     parser.add_argument(
         "onColour",
         type=int,
-        help="Colour of the on pixels in integer form. The 3 bit format is R B G.",
+        help="Colour of the on pixels in integer form. The 3 bit format is R G B.",
     )
     parser.add_argument(
         "offColour",
         type=int,
-        help="Colour of the off pixels in integer form. The 3 bit format is R B G.",
+        help="Colour of the off pixels in integer form. The 3 bit format is R G B.",
     )
 
     # parsing

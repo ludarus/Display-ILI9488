@@ -402,10 +402,10 @@ static uint8_t prevBrightnessVal;
 static uint16_t flashOffset;
 
 // alarm members
-static uint32_t alarmTick;
+static volatile uint32_t alarmTick;
 
 // for error
-static uint32_t lastMsgTick = 1;
+static volatile uint32_t lastMsgTick = 1;
 
 // for serial diagnostics
 static uint8_t diagnosticMsg[64];
@@ -473,10 +473,10 @@ HAL_StatusTypeDef CMD_DispBg(CanRxMessage_t *msg) {
   }
 
   const Obj_t *obj = &objects[objNum - 1];
-  Image_t *bg = (Image_t *)(*obj).img;
+  Image_t *bg = (Image_t *)obj->img;
 
   // if it's not a background type or it has no image, SET background to blank
-  if ((*obj).type != 0 || (*obj).img == NULL) {
+  if (obj->type != BACKGROUND_OBJ_TYPE || obj->img == NULL) {
     bg = (Image_t *)&File_005_ObjNum_004_480x320_6_18_26;
   }
 
@@ -511,7 +511,8 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
 
   if (msg->data[0] == 0) {
     // should have a value of 0
-    uint8_t First_Pkt_Flag = msg->data[0];
+    // uint8_t First_Pkt_Flag = msg->data[0];
+
     // number of characters in the string
     remainingChars = msg->data[1];
     target = remainingChars;
@@ -521,7 +522,14 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
 
     objNum = lsb | msb;
 
-    // filling up the 4 bytes of charInfo contained within this packet
+    // if object isn't a text type
+    if (objects[objNum - 1].type != TEXT_OBJ_TYPE) {
+      // resetting target
+      target = 0;
+      return HAL_ERROR;
+    }
+
+    // filling up the remaining bytes of charInfo contained within this packet
     uint8_t fill = (remainingChars > 4) ? 4 : remainingChars;
     for (uint8_t i = 0; i < fill; i++) {
       charArray[i] = msg->data[i + 4];
@@ -545,9 +553,9 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
                               charArray, target, font, FONTSIZE, CHARWIDTH,
                               CHARHEIGHT, false, true, true));
 
-    uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-                           "Disp text: \"%.*s\", objNum = %u\n", target,
-                           charArray, objNum);
+    // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+    //                        "Disp text: \"%.*s\", objNum = %u\n", target,
+    //                        charArray, objNum);
 
     // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
@@ -558,7 +566,8 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
   }
 
   // logging
-  // HAL_UART_Transmit_IT(uart, (uint8_t *)"recieved partial text packet\n", 29);
+  // HAL_UART_Transmit_IT(uart, (uint8_t *)"recieved partial text packet\n",
+  // 29);
 
   return HAL_OK;
 }
@@ -584,14 +593,13 @@ HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
 
   const Obj_t *obj = &objects[objNum - 1];
 
-  // if it's not an image type or it has no image
-  if ((*obj).type != 3 || (*obj).img == NULL) {
+  // if the obj is not an image type or has no associated image
+  if (obj->type != IMAGE_OBJ_TYPE || obj->img == NULL) {
     return HAL_ERROR;
   }
 
   // display according image
-  HAL_SPIN(ILI9488_LoadImage(spi, (*obj).x, (*obj).y, (*obj).img, true, false,
-                             true));
+  HAL_SPIN(ILI9488_LoadImage(spi, obj->x, obj->y, obj->img, true, false, true));
 
   // diagnostic
   uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
@@ -618,9 +626,16 @@ HAL_StatusTypeDef CMD_DispGrp(CanRxMessage_t *msg) {
 
   uint8_t index = msg->data[2];
 
+  const Obj_t *obj = &objects[grpNum - 1];
+
+  // if the object isn't a group table type
+  if (obj->type != GROUPTABLE_OBJ_TYPE) {
+    return HAL_ERROR;
+  }
+
   // display according image
-  // ILI9488_LOAD_IMAGE(spi, uint16_t x, uint16_t y, const Image_t *image, bool
-  // overWrite, bool draw)
+  // ILI9488_LOAD_IMAGE(spi, uint16_t x, uint16_t y, const Image_t *image,
+  // bool overWrite, bool draw)
 
   // diagnostic
   uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
@@ -811,7 +826,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
         uart, (uint8_t *)"TIMEOUT: no command received in the last 4000ms\n",
         48);
 
-    // ILI9488_LOAD_IMAGE(spi, 0, 0, &SYSFAIL_480x320, true, true);
+    ILI9488_LoadImage(spi, 0, 0, &SYSFAIL_480x320, true, false, true);
 
     lastMsgTick = 0;
   }
@@ -884,6 +899,13 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
 
   // iterating through every message
   uint8_t snapshot = queuedMessages;
+  if (snapshot != 0) {
+    // logging
+    uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg), "%u\n",
+                           snapshot);
+
+    HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+  }
   for (uint8_t msgIdx = 0; msgIdx < snapshot; msgIdx++) {
 
     // // Format the message
@@ -905,7 +927,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
       // executing command
       commands[cmdNum - commands[0].cmdNum].handle(&queue[msgIdx]);
 
-		// incrementing call log
+      // incrementing call log
       commands[cmdNum - commands[0].cmdNum].numerOfTimesCalled++;
 
     } else {

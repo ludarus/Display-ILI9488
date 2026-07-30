@@ -12,8 +12,13 @@ import os
 # Type 1    = text
 # Type 9    = flag? or something
 
+# defining constants for scaling
 OLD_WIDTH = 160
+
+# original display = 160x80
 OLD_HEIGHT = 84
+
+# object 2 is the font map
 
 NEW_WIDTH = 480
 NEW_HEIGHT = 320
@@ -21,7 +26,13 @@ NEW_HEIGHT = 320
 SCALING_WIDTH = NEW_WIDTH / OLD_WIDTH
 SCALING_HEIGHT = NEW_HEIGHT / OLD_HEIGHT
 
+backgroundIds = []
+textIds = []
+imageIds = []
+groupIds = []
 
+
+# object class for readability
 class Object:
     # constructor
     def __init__(
@@ -50,6 +61,7 @@ class Object:
         self.imgReference = imgReference
         self.flashImgReference = flashImgReference
 
+    # print object override
     def __repr__(self):
         return f"""
 objNum = {self.objNum},
@@ -66,9 +78,10 @@ flashImgRef= {self.flashImgReference}
 """
 
 
+# project path for the binary input file
 pathFromRoot = "tables/tableobj2.bin"
 
-# global image list
+# global image list as a mapping from object number to image (if an image for it exists)
 images: list[str] = [
     "&File_002_ObjNum_001_NEW_6_17_26",
     "",
@@ -221,22 +234,27 @@ images: list[str] = [
     "&File_079_ObjNum_149_480x320_6_17_26",
 ]
 
-# maps flash locations to an object
+# map of flash location to the first object that is stored there
 flashMap = {}
 
 
 def table2Array() -> list[Object]:
-    # read in the tables .bin from the original EL Raymond project
-    # read the tables.bin file into an array. This is the original tables.bin from the EL Raymond project
+    """read in the tables .bin from the original EL Raymond project
+    read the tables.bin file into an array."""
 
     ObjList: Object = []
 
     try:
-        in_file = open(pathFromRoot, "rb")  # open the table file
-        filelen = os.path.getsize(pathFromRoot)
-        NumObjs = (filelen + 11) // 12  # 12 entries per row in the table object
+        # open the table file
+        in_file = open(pathFromRoot, "rb")
 
-        for i in range(NumObjs):  # fill in the object table array
+        filelen = os.path.getsize(pathFromRoot)
+
+        # 12 entries per row in the table object
+        NumObjs = (filelen + 11) // 12
+
+        # fill in the object table array
+        for i in range(NumObjs):
             lsb = in_file.read(1)
             msb = in_file.read(1)
             msb = msb[0]
@@ -301,16 +319,21 @@ def table2Array() -> list[Object]:
 
 
 def convertToNewScreen(objList: list[Object]) -> list[Object]:
-    # converts the old dimensions and coordinates to the scaled versions
+    """converts the old dimensions and coordinates to the scaled versions, and populates specialized arrays"""
+
     for obj in objList:
         # different conversion methods depending on the type
         match obj.objType:
             # table
             case 13:
-                ...
+                # applying enum
+                obj.objType = "TABLE_OBJ_TYPE"
 
             # background
             case 0:
+                obj.objType = "BACKGROUND_OBJ_TYPE"
+                backgroundIds.append(obj.objNum)
+
                 obj.xLocation = 0
                 obj.yLocation = 0
                 obj.xDimension = NEW_WIDTH
@@ -319,6 +342,9 @@ def convertToNewScreen(objList: list[Object]) -> list[Object]:
 
             # image
             case 3:
+                obj.objType = "IMAGE_OBJ_TYPE"
+                imageIds.append(obj.objNum)
+
                 obj.xLocation *= 8 * SCALING_WIDTH
                 obj.yLocation *= SCALING_HEIGHT
                 obj.xDimension *= 8 * SCALING_WIDTH
@@ -326,24 +352,32 @@ def convertToNewScreen(objList: list[Object]) -> list[Object]:
 
             # group table
             case 4:
-                ...
+                obj.objType = "GROUPTABLE_OBJ_TYPE"
+                groupIds.append(obj.objNum)
 
             # text
             case 1:
+                obj.objType = "TEXT_OBJ_TYPE"
+
                 obj.xLocation *= 8 * SCALING_WIDTH
                 # Text seems to be slightly out of bounds on y, so scaling this back a little bit
                 obj.yLocation *= SCALING_HEIGHT
 
+                obj.xLocation = int(obj.xLocation)
+                # tuple
+                textIds.append((obj.objNum, obj.xLocation))
+
             # ???
             case 9:
-                ...
+                obj.objType = "UNKNOWN_OBJ_TYPE"
+
         # casting back to integer
         obj.xLocation = int(obj.xLocation)
         obj.yLocation = int(obj.yLocation)
         obj.xDimension = int(obj.xDimension)
         obj.yDimension = int(obj.yDimension)
 
-        # out of bounds check - only triggers for object 2
+        # out of bounds check - only triggers for object 2 which is special for some reason
         if (
             obj.xLocation + obj.xDimension > NEW_WIDTH
             or obj.yLocation + obj.yDimension > NEW_HEIGHT
@@ -354,6 +388,8 @@ def convertToNewScreen(objList: list[Object]) -> list[Object]:
 
 
 def generateArray(modifiedObjlist: list[Object]) -> list[str]:
+    """generates a c array from the object list"""
+
     # removing the first entry
     modifiedObjlist.pop(0)
 
@@ -372,47 +408,16 @@ def generateArray(modifiedObjlist: list[Object]) -> list[str]:
     return "\n".join(lines)
 
 
-#  Object Table format'
-#  1 = LSB ObjNum'
-#  2 = MSB ObjNum'
-#  3 = ObjTypeTbl'
-#  4 = X_LocTbl'
-#  5 = Y_LocTbl'
-#  6 = X_DimTbl'
-#  7 = Y_DimTbl'
-#  8 = DataTypTbl'
-#  9 = FlashLocTbl LSB'
-#  10 = FlashLocTbl MSB'
-#  11 = ObjSizeTbl LSB'
-#  12 = ObjSizeTbl MSB'
-#  ObjList
-# enumerate the fields in the object table for more readable access
-#  Obj_Num = 0
-#  ObjType = 1
-#  xloc = 2
-#  yloc = 3
-#  xdim = 4
-#  ydim = 5
-#  DataType = 6
-#  FlashLoc = 7
-#  ObjSize = 8
-
-#  ***********************************************************************************************'
+#  ***********************************************************************************************
 
 baseList = table2Array()
 modifiedList = convertToNewScreen(baseList)
 cArray = generateArray(modifiedList)
 
 print(modifiedList)
+print(cArray)
 
-
-#  Tables to create
-#  X_DimTbl	        ; 1 byte each X dimension in bytes
-#  Y_DimTbl	        ; 1 byte each Y dimension in pixels
-#  DataTypTbl		; 1 byte each data type
-#  FlashLocTbl		; 2 bytes each offset in flash lsb,msb
-#  ObjSizeTbl		; 2 bytes size of object it bytes
-#  RamLocTbl		; 2 bytes of ram location
-#  ********************************************************************
-#           X_DimTbl
-#  ********************************************************************
+print("bgs: \n", tuple(backgroundIds))
+print("images: \n", tuple(imageIds))
+print("groups: \n", tuple(groupIds))
+print("text: \n", tuple(textIds))

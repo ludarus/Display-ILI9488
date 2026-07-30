@@ -55,7 +55,7 @@ typedef struct {
   uint8_t cmdNum;
   // a function pointer to a handle that executes when the command is called
   HAL_StatusTypeDef (*handle)(CanRxMessage_t *);
-  uint16_t numerOfTimesCalled;
+  uint16_t numberOfTimesCalled;
 } CanCommand_t;
 
 #endif /* INC_COMMANDS_CAN_H_ */

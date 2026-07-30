@@ -430,7 +430,7 @@ HAL_StatusTypeDef brightnessInit() {
     if (*(__IO uint16_t *)(offset + BRIGHTNESS_PAGE_ADDR) < 0xFFFF) {
       flashOffset = (uint32_t)offset + 2;
       // setting brightness
-      // diagnostic
+      // diagnostic logging
       uint8_t len =
           snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
                    "successfully read previous brightness value, offset = %u\n",
@@ -484,9 +484,9 @@ HAL_StatusTypeDef CMD_DispBg(CanRxMessage_t *msg) {
 
   HAL_SPIN(ILI9488_LoadImage(spi, 0, 0, bg, true, false, true));
 
-  // display according image
-  uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-                         "displayed background with objNum: %u\n", objNum);
+  // display according image logging
+  // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+  //                        "displayed background with objNum: %u\n", objNum);
 
   // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
@@ -599,11 +599,11 @@ HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
   }
 
   // display according image
-  HAL_SPIN(ILI9488_LoadImage(spi, obj->x, obj->y, obj->img, true, false, true));
+  HAL_SPIN(ILI9488_LoadImage(spi, obj->x, obj->y, obj->img, false, true, true));
 
-  // diagnostic
-  uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-                         "displayed image with objNum: %u\n", objNum);
+  // diagnostic logging
+  // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+  //                        "displayed image with objNum: %u\n", objNum);
 
   // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
@@ -637,10 +637,10 @@ HAL_StatusTypeDef CMD_DispGrp(CanRxMessage_t *msg) {
   // ILI9488_LOAD_IMAGE(spi, uint16_t x, uint16_t y, const Image_t *image,
   // bool overWrite, bool draw)
 
-  // diagnostic
-  uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-                         "displayed group with grpNum: %u and index: %u\n",
-                         grpNum, index);
+  // diagnostic logging
+  // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+  //                        "displayed group with grpNum: %u and index: %u\n",
+  //                        grpNum, index);
 
   // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
@@ -698,9 +698,10 @@ HAL_StatusTypeDef CMD_Brightness(CanRxMessage_t *msg) {
     alarmTick = brightnessTick;
   }
 
-  // diagnostic
-  uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-                         "changed display brightness to %u\n", brightnessVal);
+  // diagnostic logging
+  // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+  //                        "changed display brightness to %u\n",
+  //                        brightnessVal);
 
   // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
@@ -714,10 +715,11 @@ HAL_StatusTypeDef CMD_Alarm(CanRxMessage_t *msg) {
 
   ALARM_Set(alarmTimer, frequency, dutyCycle);
 
-  uint8_t len =
-      snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-               "changed alarm to a frequency of %u and a duty of %u\n",
-               frequency, dutyCycle);
+  // logging
+  // uint8_t len =
+  //     snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+  //              "changed alarm to a frequency of %u and a duty of %u\n",
+  //              frequency, dutyCycle);
 
   // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
@@ -819,8 +821,12 @@ HAL_StatusTypeDef CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
 
 HAL_StatusTypeDef CAN_CMDS_Process(void) {
 
+  uint32_t lastMsgTick_StateSave = lastMsgTick;
+  uint32_t currentTick = HAL_GetTick();
   // display error if the can bus is silent for 4 seconds
-  if (HAL_GetTick() - lastMsgTick > 4000 && lastMsgTick != 0) {
+  if (currentTick - lastMsgTick_StateSave > 4000 &&
+      lastMsgTick_StateSave != 0) {
+
     // display error image.
     HAL_UART_Transmit_IT(
         uart, (uint8_t *)"TIMEOUT: no command received in the last 4000ms\n",
@@ -832,7 +838,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
   }
 
   // if the alarm has been on for 100 ms
-  if (HAL_GetTick() - alarmTick >= 100 && alarmTick != 0) {
+  if (currentTick - alarmTick >= 100 && alarmTick != 0) {
 
     // HAL_UART_Transmit_IT(uart, (uint8_t *)"Brightness beep completed\n", 26);
 
@@ -843,7 +849,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
 
   // if it's been 5 seconds since last brightness change
   if (brightnessVal != prevBrightnessVal && brightnessTick != 0 &&
-      HAL_GetTick() - brightnessTick > 5000) {
+      currentTick - brightnessTick > 5000) {
     brightnessTick = 0;
 
     // unlocking flash
@@ -892,7 +898,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
 
     prevBrightnessVal = brightnessVal;
 
-    // diagnostic
+    // diagnostic logging
     HAL_UART_Transmit_IT(
         uart, (uint8_t *)"Successfully wrote brightness to flash\n", 39);
   }
@@ -901,7 +907,8 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
   uint8_t snapshot = queuedMessages;
   if (snapshot != 0) {
     // logging
-    uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg), "%u\n",
+    uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+    "%u\n",
                            snapshot);
 
     HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
@@ -928,7 +935,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
       commands[cmdNum - commands[0].cmdNum].handle(&queue[msgIdx]);
 
       // incrementing call log
-      commands[cmdNum - commands[0].cmdNum].numerOfTimesCalled++;
+      // commands[cmdNum - commands[0].cmdNum].numberOfTimesCalled++;
 
     } else {
       // if no commands match

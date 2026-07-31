@@ -11,6 +11,8 @@ DISPLAY_WIDTH = 480
 CHAR_WIDTH = 32
 FONT_SIZE = 96
 
+debug_text_idx = 0
+
 # using tuples for immutability
 # background objNums
 backgroundIds = (1, 4, 5, 6, 135, 136, 147, 148, 149)
@@ -216,7 +218,17 @@ class BackgroundGenerator(MsgGenerator):
 # generates text messages
 class TextGenerator(MsgGenerator):
     def createData(self, currentTime: int) -> list[CanMsg]:
-        idx = random.randint(0, len(textIds) - 1)
+        # idx = random.randint(0, len(textIds) - 1)
+
+        # debugging
+        global debug_text_idx
+
+        idx = debug_text_idx
+        debug_text_idx += 1
+
+        if debug_text_idx >= len(textIds):
+            debug_text_idx = 0
+
         numberOfChars = (480 - textIds[idx][1]) // CHAR_WIDTH
         print("num of chars = ", numberOfChars)
         objNum = textIds[idx][0]
@@ -353,7 +365,7 @@ messages = combine_generators(
         # AlarmGenerator(50, 500),
         # BrightnessGenerator(30, 50),
         # FailureGenerator(1000, 5),
-        # TextGenerator(13, 2000),
+        TextGenerator(100, 100),
         # VersionGenerator(10, 1000),
     ]
 )

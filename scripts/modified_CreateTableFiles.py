@@ -16,8 +16,7 @@ import os
 OLD_WIDTH = 160
 
 # original display = 160x80
-OLD_HEIGHT = 84
-
+OLD_HEIGHT = 80
 # object 2 is the font map
 
 NEW_WIDTH = 480

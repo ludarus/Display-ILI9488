@@ -21,89 +21,19 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "File_002_ObjNum_001_NEW_6_17_26.h"
-#include "File_005_ObjNum_004_480x320_6_18_26.h"
 #include "File_006_ObjNum_005_480x320_6_18_26_C.h"
-#include "File_007_ObjNum_006_480x320_6_18_26.h"
-#include "File_008_ObjNum_007_96x190_6_18_26.h"
-#include "File_009_ObjNum_008_96x190_6_18_26.h"
-#include "File_010_ObjNum_009_96x190_6_18_26.h"
-#include "File_011_ObjNum_010_96x190_6_18_26.h"
-#include "File_012_ObjNum_011_96x190_6_18_26.h"
-#include "File_013_ObjNum_012_96x190_6_18_26.h"
-#include "File_014_ObjNum_013_96x190_6_18_26.h"
-#include "File_015_ObjNum_014_96x190_6_18_26.h"
-#include "File_016_ObjNum_015_96x190_6_18_26.h"
-#include "File_017_ObjNum_016_96x190_6_18_26.h"
-#include "File_018_ObjNum_017_96x190_6_16_26.h"
-#include "File_019_ObjNum_018_48x208_6_19_26.h"
-#include "File_020_ObjNum_019_48x208_6_19_26.h"
-#include "File_021_ObjNum_020_48x208_6_19_26.h"
-#include "File_022_ObjNum_021_48x208_6_19_26.h"
-#include "File_023_ObjNum_022_48x208_6_19_26.h"
-#include "File_024_ObjNum_023_48x208_6_19_26.h"
-#include "File_025_ObjNum_024_48x208_6_19_26.h"
-#include "File_026_ObjNum_025_48x208_6_19_26.h"
-#include "File_027_ObjNum_026_48x208_6_19_26.h"
-#include "File_028_ObjNum_027_48x208_6_19_26.h"
-#include "File_029_ObjNum_028_48x208_6_19_26.h"
-#include "File_030_ObjNum_029_64x25_6_19_26.h"
-#include "File_031_ObjNum_030_64x25_6_19_26.h"
-#include "File_032_ObjNum_031_96x190_6_19_26.h"
-#include "File_033_ObjNum_032_96x190_6_19_26.h"
-#include "File_034_ObjNum_033_96x190_6_19_26.h"
-#include "File_035_ObjNum_034_96x190_6_19_26.h"
-#include "File_036_ObjNum_035_96x190_6_19_26.h"
-#include "File_037_ObjNum_036_96x190_6_19_26.h"
-#include "File_038_ObjNum_037_96x190_6_19_26.h"
-#include "File_039_ObjNum_038_96x190_6_19_26.h"
-#include "File_040_ObjNum_039_96x190_6_19_26.h"
-#include "File_041_ObjNum_040_96x190_6_19_26.h"
-#include "File_042_ObjNum_041_96x190_6_19_26.h"
-#include "File_043_ObjNum_042_144x208_6_19_26.h"
-#include "File_044_ObjNum_043_144x208_6_19_26.h"
-#include "File_045_ObjNum_044_144x208_6_19_26.h"
-#include "File_046_ObjNum_045_144x208_6_19_26.h"
-#include "File_047_ObjNum_046_144x208_6_19_26.h"
-#include "File_048_ObjNum_052_144x183_6_19_26.h"
-#include "File_049_ObjNum_053_144x183_6_19_26.h"
-#include "File_050_ObjNum_054_144x183_6_19_26.h"
-#include "File_051_ObjNum_055_144x183_6_19_26.h"
-#include "File_052_ObjNum_057_144x30_6_19_26.h"
-#include "File_053_ObjNum_077_48x30_6_19_26.h"
-#include "File_054_ObjNum_087_48x255_6_19_26.h"
-#include "File_055_ObjNum_090_480x320_6_18_26.h"
-#include "File_056_ObjNum_091_480x320_6_18_26.h"
-#include "File_057_ObjNum_092_480x320_6_18_26.h"
-#include "File_058_ObjNum_093_480x320_6_18_26.h"
-#include "File_059_ObjNum_094_480x320_6_18_26.h"
-#include "File_062_ObjNum_097_480x40_6_19_26.h"
-#include "File_063_ObjNum_098_176x33_6_19_26.h"
-#include "File_064_ObjNum_099_48x63_6_19_26.h"
-#include "File_065_ObjNum_104_16x30_6_19_26.h"
-#include "File_066_ObjNum_109_96x80_6_19_26.h"
-#include "File_067_ObjNum_114_64x103_6_19_26.h"
-#include "File_068_ObjNum_119_64x103_6_19_26.h"
-#include "File_069_ObjNum_124_64x103_6_19_26.h"
-#include "File_070_ObjNum_129_96x80_6_19_26.h"
-#include "File_071_ObjNum_134_176x188_6_19_26.h"
-#include "File_072_ObjNum_135_480x320_6_18_26.h"
-#include "File_073_ObjNum_136_480x320_6_18_26.h"
-#include "File_074_ObjNum_138_48x143_6_19_26.h"
-#include "File_075_ObjNum_140_368x40_6_19_26.h"
-#include "File_076_ObjNum_143_368x40_6_19_26.h"
-#include "File_077_ObjNum_147_480x320_6_18_26.h"
-#include "File_078_ObjNum_148_480x320_6_18_26.h"
-#include "File_079_ObjNum_149_480x320_6_17_26.h"
 #include "SYSFAIL_480x320.h"
 #include "alarm.h"
 #include "commands-can.h"
 #include "commands-usart.h"
 #include "display-ili9488.h"
 #include "font.h"
+#include "objects.h"
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_tim.h"
 #include "switches.h"
+
+// image includes
 
 /* USER CODE END Includes */
 
@@ -158,11 +88,10 @@ static void MX_TIM17_Init(void);
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
-{
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void) {
 
   /* USER CODE BEGIN 1 */
 
@@ -170,7 +99,8 @@ int main(void)
 
   /* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick.
+   */
   HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -229,26 +159,14 @@ int main(void)
   HAL_UART_Transmit_IT(
       &huart2, (uint8_t *)"Successfully initialized all interfaces\n", 40);
 
-  // --- debugging ---
+  // --- debugging --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
+
   ILI9488_SetBackground(&File_006_ObjNum_005_480x320_6_18_26_C);
 
-  ILI9488_LoadImage(&hspi1, 0, 0, &File_006_ObjNum_005_480x320_6_18_26_C, true,
-                    false, false);
 
-  ILI9488_LoadText(&hspi1, 0, 0, "hi :P ksdfj ajd", 15, font, FONTSIZE,
-                   CHARWIDTH, CHARHEIGHT, true, false, true);
+  ILI9488_LoadImage(&hspi1, 0, 0, objects[33].img, true, false, true);
 
-  ILI9488_LoadText(&hspi1, 0, 50, "hi :P ksdfj laksjadsflkjajd", 25, font, FONTSIZE,
-                   CHARWIDTH, CHARHEIGHT, true, false, true);
-
-  ILI9488_LoadText(&hspi1, 0, 100, "hi :P ksdfj ajd", 15, font, FONTSIZE,
-                   CHARWIDTH, CHARHEIGHT, true, false, true);
-
-  ILI9488_LoadText(&hspi1, 0, 150, "hi :P ksdfj ajd", 15, font, FONTSIZE,
-                   CHARWIDTH, CHARHEIGHT, true, false, true);
-
-  ILI9488_LoadImage(&hspi1, 432, 69, &File_025_ObjNum_024_48x208_6_19_26, false,
-                    true, true);
+  // displaying images to test boundaries
 
   ILI9488_Draw(&hspi1);
 
@@ -272,56 +190,51 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
-{
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void) {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL12;
   RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV2;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
     Error_Handler();
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1;
+   */
+  RCC_ClkInitStruct.ClockType =
+      RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
-  {
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK) {
     Error_Handler();
   }
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-  {
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) {
     Error_Handler();
   }
 }
 
 /**
-  * @brief CAN Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_CAN_Init(void)
-{
+ * @brief CAN Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_CAN_Init(void) {
 
   /* USER CODE BEGIN CAN_Init 0 */
 
@@ -342,23 +255,20 @@ static void MX_CAN_Init(void)
   hcan.Init.AutoRetransmission = ENABLE;
   hcan.Init.ReceiveFifoLocked = DISABLE;
   hcan.Init.TransmitFifoPriority = DISABLE;
-  if (HAL_CAN_Init(&hcan) != HAL_OK)
-  {
+  if (HAL_CAN_Init(&hcan) != HAL_OK) {
     Error_Handler();
   }
   /* USER CODE BEGIN CAN_Init 2 */
 
   /* USER CODE END CAN_Init 2 */
-
 }
 
 /**
-  * @brief SPI1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_SPI1_Init(void)
-{
+ * @brief SPI1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_SPI1_Init(void) {
 
   /* USER CODE BEGIN SPI1_Init 0 */
 
@@ -382,23 +292,20 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CRCPolynomial = 7;
   hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
   hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
-  {
+  if (HAL_SPI_Init(&hspi1) != HAL_OK) {
     Error_Handler();
   }
   /* USER CODE BEGIN SPI1_Init 2 */
 
   /* USER CODE END SPI1_Init 2 */
-
 }
 
 /**
-  * @brief TIM2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM2_Init(void)
-{
+ * @brief TIM2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM2_Init(void) {
 
   /* USER CODE BEGIN TIM2_Init 0 */
 
@@ -416,34 +323,29 @@ static void MX_TIM2_Init(void)
   htim2.Init.Period = 99;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
-  {
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK) {
     Error_Handler();
   }
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-  {
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK) {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-  {
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK) {
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
-
 }
 
 /**
-  * @brief TIM14 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM14_Init(void)
-{
+ * @brief TIM14 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM14_Init(void) {
 
   /* USER CODE BEGIN TIM14_Init 0 */
 
@@ -460,36 +362,31 @@ static void MX_TIM14_Init(void)
   htim14.Init.Period = 3332;
   htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
-  {
+  if (HAL_TIM_Base_Init(&htim14) != HAL_OK) {
     Error_Handler();
   }
-  if (HAL_TIM_PWM_Init(&htim14) != HAL_OK)
-  {
+  if (HAL_TIM_PWM_Init(&htim14) != HAL_OK) {
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 1667;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim14, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
+  if (HAL_TIM_PWM_ConfigChannel(&htim14, &sConfigOC, TIM_CHANNEL_1) != HAL_OK) {
     Error_Handler();
   }
   /* USER CODE BEGIN TIM14_Init 2 */
 
   /* USER CODE END TIM14_Init 2 */
   HAL_TIM_MspPostInit(&htim14);
-
 }
 
 /**
-  * @brief TIM17 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM17_Init(void)
-{
+ * @brief TIM17 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_TIM17_Init(void) {
 
   /* USER CODE BEGIN TIM17_Init 0 */
 
@@ -508,12 +405,10 @@ static void MX_TIM17_Init(void)
   htim17.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim17.Init.RepetitionCounter = 0;
   htim17.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim17) != HAL_OK)
-  {
+  if (HAL_TIM_Base_Init(&htim17) != HAL_OK) {
     Error_Handler();
   }
-  if (HAL_TIM_PWM_Init(&htim17) != HAL_OK)
-  {
+  if (HAL_TIM_PWM_Init(&htim17) != HAL_OK) {
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
@@ -523,8 +418,7 @@ static void MX_TIM17_Init(void)
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-  if (HAL_TIM_PWM_ConfigChannel(&htim17, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
+  if (HAL_TIM_PWM_ConfigChannel(&htim17, &sConfigOC, TIM_CHANNEL_1) != HAL_OK) {
     Error_Handler();
   }
   sBreakDeadTimeConfig.OffStateRunMode = TIM_OSSR_DISABLE;
@@ -534,24 +428,21 @@ static void MX_TIM17_Init(void)
   sBreakDeadTimeConfig.BreakState = TIM_BREAK_DISABLE;
   sBreakDeadTimeConfig.BreakPolarity = TIM_BREAKPOLARITY_HIGH;
   sBreakDeadTimeConfig.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
-  if (HAL_TIMEx_ConfigBreakDeadTime(&htim17, &sBreakDeadTimeConfig) != HAL_OK)
-  {
+  if (HAL_TIMEx_ConfigBreakDeadTime(&htim17, &sBreakDeadTimeConfig) != HAL_OK) {
     Error_Handler();
   }
   /* USER CODE BEGIN TIM17_Init 2 */
 
   /* USER CODE END TIM17_Init 2 */
   HAL_TIM_MspPostInit(&htim17);
-
 }
 
 /**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART2_UART_Init(void)
-{
+ * @brief USART2 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_USART2_UART_Init(void) {
 
   /* USER CODE BEGIN USART2_Init 0 */
 
@@ -570,21 +461,18 @@ static void MX_USART2_UART_Init(void)
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
   huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
   huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
+  if (HAL_UART_Init(&huart2) != HAL_OK) {
     Error_Handler();
   }
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
-
 }
 
 /**
-  * Enable DMA controller clock
-  */
-static void MX_DMA_Init(void)
-{
+ * Enable DMA controller clock
+ */
+static void MX_DMA_Init(void) {
 
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
@@ -596,16 +484,14 @@ static void MX_DMA_Init(void)
   /* DMA1_Ch2_3_DMA2_Ch1_2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Ch2_3_DMA2_Ch1_2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Ch2_3_DMA2_Ch1_2_IRQn);
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_GPIO_Init(void)
-{
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_GPIO_Init(void) {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN MX_GPIO_Init_1 */
 
@@ -622,7 +508,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(DISPLAY_DC_GPIO_Port, DISPLAY_DC_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, SWITCH_POWER_Pin|DISPLAY_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, SWITCH_POWER_Pin | DISPLAY_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(DISPLAY_RESET_GPIO_Port, DISPLAY_RESET_Pin, GPIO_PIN_RESET);
@@ -641,14 +527,14 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(DISPLAY_DC_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : SWITCH_POWER_Pin DISPLAY_CS_Pin */
-  GPIO_InitStruct.Pin = SWITCH_POWER_Pin|DISPLAY_CS_Pin;
+  GPIO_InitStruct.Pin = SWITCH_POWER_Pin | DISPLAY_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : SWITCH5_Pin SWITCH4_Pin */
-  GPIO_InitStruct.Pin = SWITCH5_Pin|SWITCH4_Pin;
+  GPIO_InitStruct.Pin = SWITCH5_Pin | SWITCH4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -660,7 +546,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(SWITCH3_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : SWITCH2_Pin SWITCH1_Pin */
-  GPIO_InitStruct.Pin = SWITCH2_Pin|SWITCH1_Pin;
+  GPIO_InitStruct.Pin = SWITCH2_Pin | SWITCH1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -682,11 +568,10 @@ static void MX_GPIO_Init(void)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
+void Error_Handler(void) {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
@@ -696,14 +581,13 @@ void Error_Handler(void)
 }
 #ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t *file, uint32_t line)
-{
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
+void assert_failed(uint8_t *file, uint32_t line) {
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line
      number, ex: printf("Wrong parameters value: file %s on line %d\r\n", file,

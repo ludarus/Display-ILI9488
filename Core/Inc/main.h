@@ -50,9 +50,9 @@ extern "C" {
 // macro to check the status of a function
 #define HAL_TRY(x)                                                             \
   do {                                                                         \
-    if (x != HAL_OK) {                                                         \
-      return x;                                                                \
-    }                                                                          \
+    HAL_StatusTypeDef _s = (x);                                                \
+    if (_s != HAL_OK)                                                          \
+      return _s;                                                               \
   } while (0)
 
 // spinning macro (can be dangerous)

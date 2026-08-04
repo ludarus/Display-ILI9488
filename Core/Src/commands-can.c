@@ -612,15 +612,15 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
 
 // callback for received message
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
-  // queueing the command for processing in main loop. If too many messages,
-  // just overflow. Maybe change this later TODO
-  lastMsgTick = HAL_GetTick();
-  // no error handling in interrupt. Possibly do something to fix this
-  HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &queue[queuedMessages].header,
-                       queue[queuedMessages].data);
   if (queuedMessages < 48) {
+    HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &queue[queuedMessages].header,
+                         queue[queuedMessages].data);
     queuedMessages++;
   } else {
+    // on queue overflow - write message to junk buffer to discard it
+    CAN_RxHeaderTypeDef hdr;
+    uint8_t data[8];
+    HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &hdr, data);
     overFlowed = true;
   }
 }

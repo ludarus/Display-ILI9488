@@ -28,10 +28,10 @@
 #include "commands-can.h"
 #include "display-ili9488.h"
 #include "font.h"
-#include "tables.h"
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_tim.h"
 #include "switches.h"
+#include "tables.h"
 
 // image includes
 
@@ -160,8 +160,8 @@ int main(void) {
 
   // loading all smaller images to test placement
   for (int i = 0; i < 149; i++) {
-    if (objects[i].type == IMAGE_OBJ_TYPE &&
-        objects[i].img->width != ILI9488_WIDTH_PX && i != 1) {
+    if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
+        objects[i].img->width != ILI9488_WIDTH_PX) {
       if (ILI9488_LoadImage(&hspi1, objects[i].x, objects[i].y, objects[i].img,
                             true, false, true) != HAL_OK) {
         ILI9488_LoadText(&hspi1, 0, 0, (uint8_t *)"ERROR", 6, font, FONTSIZE,

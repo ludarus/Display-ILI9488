@@ -26,10 +26,9 @@
 #include "SYSFAIL_480x320.h"
 #include "alarm.h"
 #include "commands-can.h"
-#include "commands-usart.h"
 #include "display-ili9488.h"
 #include "font.h"
-#include "objects.h"
+#include "tables.h"
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_tim.h"
 #include "switches.h"
@@ -141,11 +140,6 @@ int main(void) {
   ILI9488_Init(&hspi1, &htim17);
 
   HAL_UART_Transmit_IT(&huart2, (uint8_t *)"Display initialized\n", 20);
-
-  // initializing commands
-  UART_CMDS_Init(&huart2, &hspi1);
-
-  HAL_UART_Transmit_IT(&huart2, (uint8_t *)"UART commands initialized\n", 26);
 
   // initializing can interface
   CAN_CMDS_Init(&hcan, &hspi1, &huart2, &htim14, &htim17);

@@ -1,5 +1,7 @@
+// THIS FILE HAS BEEN DEPRECATED; NO LONGER IN USE
+
 /*
- * commands.h
+ * commands-usart.h
  *
  *  Created on: Jun 18, 2026
  *      Author: Luke Fadel

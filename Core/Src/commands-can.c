@@ -12,7 +12,6 @@
 #include "display-ili9488.h"
 #include "font.h"
 #include "main.h"
-#include "objects.h"
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_can.h"
 #include "stm32f0xx_hal_def.h"
@@ -21,6 +20,7 @@
 #include "stm32f0xx_hal_spi.h"
 #include "stm32f0xx_hal_tim.h"
 #include "stm32f0xx_hal_uart.h"
+#include "tables.h"
 #include <stdbool.h>
 #include <stdio.h>
 

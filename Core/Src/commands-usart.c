@@ -1,5 +1,7 @@
+// THIS FILE HAS BEEN DEPRECATED; NO LONGER IN USE
+
 /*
- * commands.c
+ * commands-usart.c
  *
  *  Created on: Jun 19, 2026
  *      Author: Luke Fadel
@@ -185,7 +187,7 @@ uint8_t commandBuffer[255];
 
 // initialization sequence. currently just a setter that takes the serial input
 HAL_StatusTypeDef UART_CMDS_Init(UART_HandleTypeDef *uartInterface,
-                                    SPI_HandleTypeDef *displayInterface) {
+                                 SPI_HandleTypeDef *displayInterface) {
 
   spi = displayInterface;
   // DMA serial command recieve until IDLE

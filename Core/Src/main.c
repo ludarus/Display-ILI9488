@@ -163,8 +163,35 @@ int main(void) {
 
   ILI9488_SetBackground(&File_006_ObjNum_005_480x320_6_18_26_C);
 
+  // loading all smaller images to test placement
+  for (int i = 0; i < 149; i++) {
+    if (objects[i].type == IMAGE_OBJ_TYPE &&
+        objects[i].img->width != ILI9488_WIDTH_PX && i != 1) {
+      if (ILI9488_LoadImage(&hspi1, objects[i].x, objects[i].y, objects[i].img,
+                            true, false, true) != HAL_OK) {
+        ILI9488_LoadText(&hspi1, 0, 0, (uint8_t *)"ERROR", 6, font, FONTSIZE,
+                         CHARWIDTH, CHARHEIGHT, true, false, true);
+      }
 
-  ILI9488_LoadImage(&hspi1, 0, 0, objects[33].img, true, false, true);
+      HAL_Delay(100);
+    }
+  }
+
+  HAL_Delay(5000);
+
+  // loading all text to test placement
+  for (int i = 0; i < 149; i++) {
+    if (objects[i].type == TEXT_OBJ_TYPE) {
+      ILI9488_LoadImage(&hspi1, objects[i].x, objects[i].y, objects[i].img,
+                        true, false, true);
+
+      ILI9488_LoadText(&hspi1, objects[i].x, objects[i].y, "HHHHHHHHHHHHHHH",
+                       (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH, font,
+                       FONTSIZE, CHARWIDTH, CHARHEIGHT, true, false, true);
+
+      HAL_Delay(1000);
+    }
+  }
 
   // displaying images to test boundaries
 

@@ -54,7 +54,7 @@ $ python BMP_parser.py <input file> <output directory> -f -cw <character width i
 ```
 
 # Lookup table generation
-- Use the [generate_lookup](scripts/generate_lookup.py) script to generate a lookup table from the specified on and off colours
+- Use the [generate_lookup_table](scripts/generate_lookup_table.py) script to generate a lookup table from the specified on and off colours
 ```bash
 $ python generate_lookup.py <on colour in R B G> <off colour in R B G>
 ```

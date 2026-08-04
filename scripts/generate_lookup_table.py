@@ -1,3 +1,4 @@
+# generates a lookup table to convert bitpacked bytes of pixels to expanded 4bpp coloured pixels
 import argparse
 
 

@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "File_005_ObjNum_004_480x320_6_18_26.h"
 #include "File_006_ObjNum_005_480x320_6_18_26_C.h"
 #include "SYSFAIL_480x320.h"
 #include "alarm.h"
@@ -173,11 +174,11 @@ int main(void) {
                          CHARWIDTH, CHARHEIGHT, true, false, true);
       }
 
-      HAL_Delay(100);
+      HAL_Delay(30);
     }
   }
 
-  HAL_Delay(5000);
+  HAL_Delay(30);
 
   // loading all text to test placement
   for (int i = 0; i < 149; i++) {
@@ -189,9 +190,16 @@ int main(void) {
                        (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH, font,
                        FONTSIZE, CHARWIDTH, CHARHEIGHT, true, false, true);
 
-      HAL_Delay(1000);
+      HAL_Delay(20);
     }
   }
+
+  HAL_Delay(100);
+
+  ILI9488_SetBackground(objects[136].img);
+
+  ILI9488_LoadText(&hspi1, objects[145].x, objects[145].y, "Test", 4, font,
+                   FONTSIZE, CHARWIDTH, CHARHEIGHT, true, true, true);
 
   // displaying images to test boundaries
 

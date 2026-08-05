@@ -37,10 +37,13 @@ volatile static bool overFlowed = false;
 
 // private declarations
 
-// number of queued messages to be processed
-static volatile uint8_t queuedMessages = 0;
+// tracking the number of messages in the queue and the amount of messages being
+// processed in the main loop
+static volatile uint8_t writeIdx = 0; // next slot the interrupt will write to
+static volatile uint8_t readIdx = 0;  // next slot the main loop will read
 // CAN message queue
-static CanRxMessage_t queue[48];
+#define QUEUE_SIZE 64
+static CanRxMessage_t queue[QUEUE_SIZE];
 // static brightness members (shared state)
 static uint32_t brightnessTick;
 static uint8_t brightnessVal;
@@ -114,7 +117,7 @@ HAL_StatusTypeDef CMD_DispBg(CanRxMessage_t *msg) {
   uint16_t objNum = lsb | msb;
 
   // objnum checking
-  if (objNum > 149) {
+  if (objNum > 149 || objNum == 0) {
     return HAL_ERROR;
   }
 
@@ -155,21 +158,21 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
     return HAL_OK;
   }
 
+  // conditional flag that starts a new text message
   if (msg->data[0] == 0) {
-    // should have a value of 0
-    // uint8_t First_Pkt_Flag = msg->data[0];
-
-    // number of characters in the string
-    remainingChars = msg->data[1];
-    target = remainingChars;
     // obj number
     uint8_t lsb = msg->data[2];
     uint16_t msb = msg->data[3] << 8;
 
     objNum = lsb | msb;
 
-    // if object isn't a text type
-    if (objects[objNum - 1].type != TEXT_OBJ_TYPE) {
+    // number of characters in the string
+    remainingChars = msg->data[1];
+    target = remainingChars;
+
+    // object num is out of range or if object isn't a text type
+    if (objNum > 149 || objNum == 0 ||
+        objects[objNum - 1].type != TEXT_OBJ_TYPE) {
       // resetting target
       target = 0;
       return HAL_ERROR;
@@ -233,7 +236,7 @@ HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
   uint16_t objNum = lsb | msb;
 
   // objnum checking
-  if (objNum > 149) {
+  if (objNum > 149 || objNum == 0) {
     return HAL_ERROR;
   }
 
@@ -257,6 +260,7 @@ HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
 }
 
 HAL_StatusTypeDef CMD_DispGrp(CanRxMessage_t *msg) {
+  // This command likely isn't used within the project
 
   // cmdNum = 0x86
   // data format = LSB_OBJ_NUM, MSB_OBJ_NUM
@@ -271,6 +275,11 @@ HAL_StatusTypeDef CMD_DispGrp(CanRxMessage_t *msg) {
   uint16_t grpNum = lsb | msb;
 
   uint8_t index = msg->data[2];
+
+  // if the objNum is out of range
+  if (grpNum > 149 || grpNum == 0) {
+    return HAL_ERROR;
+  }
 
   const Obj_t *obj = &objects[grpNum - 1];
 
@@ -567,44 +576,40 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
         uart, (uint8_t *)"Successfully wrote brightness to flash\n", 39);
   }
 
-  // iterating through every message
-  uint8_t snapshot = queuedMessages;
-  if (snapshot != 0) {
+  // logging
+  if (readIdx != writeIdx) {
     // logging
-    uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg), "%u\n",
-                           snapshot);
+    uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+                           "%u, %u\n", readIdx, writeIdx);
 
     HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
   }
-  for (uint8_t msgIdx = 0; msgIdx < snapshot; msgIdx++) {
 
-    // // Format the message
-    // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-    //                        "received CAN msg with id: 0x%03lX\n",
-    //                        (unsigned long)queue[msgIdx].header.StdId);
-    //
-    // // Transmit only the characters that were written
-    // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+  // iterating through every message
+  while (readIdx != writeIdx) {
 
-    queuedMessages--;
+    CanRxMessage_t *msg = &queue[readIdx];
 
-    uint8_t cmdNum = (uint8_t)(queue[msgIdx].header.StdId >> 3);
+    uint8_t cmdNum = (uint8_t)(msg->header.StdId >> 3);
+
     // assuming the commandnums are contiguous and in the correct order
     if (cmdNum >= commands[0].cmdNum &&
         cmdNum <=
             commands[0].cmdNum + (sizeof(commands) / sizeof(commands[0])) - 1) {
 
       // executing command
-      commands[cmdNum - commands[0].cmdNum].handle(&queue[msgIdx]);
+      commands[cmdNum - commands[0].cmdNum].handle(msg);
 
       // incrementing call log
       // commands[cmdNum - commands[0].cmdNum].numberOfTimesCalled++;
 
     } else {
       // if no commands match
-      // Maybe return a better error than this?
+      readIdx = (readIdx + 1) & (QUEUE_SIZE - 1);
       return HAL_ERROR;
     }
+
+    readIdx = (readIdx + 1) & (QUEUE_SIZE - 1);
   }
 
   return HAL_OK;
@@ -612,17 +617,27 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
 
 // callback for received message
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
-  if (queuedMessages < 48) {
-    HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &queue[queuedMessages].header,
-                         queue[queuedMessages].data);
-    queuedMessages++;
-  } else {
+  // setting last tick
+  lastMsgTick = HAL_GetTick();
+
+  // nextWriteIdx = (writeIdx + 1) % QUEUE_SIZE
+  // The & optimization only works of QUEUE_SIZE is a power of 2
+  uint8_t nextWriteIdx = (writeIdx + 1) & (QUEUE_SIZE - 1);
+
+  // when the write idx has almost "lapped" the read index
+  if (nextWriteIdx == readIdx) {
     // on queue overflow - write message to junk buffer to discard it
     CAN_RxHeaderTypeDef hdr;
     uint8_t data[8];
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &hdr, data);
     overFlowed = true;
+  } else {
+    HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &queue[writeIdx].header,
+                         queue[writeIdx].data);
   }
+
+  // incrementing writeidx
+  writeIdx = nextWriteIdx;
 }
 
 // callback for junk messages to check if network is still active

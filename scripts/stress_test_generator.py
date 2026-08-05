@@ -355,7 +355,7 @@ messages = combine_generators(
         # AlarmGenerator(50, 500),
         # BrightnessGenerator(30, 50),
         # FailureGenerator(1000, 5),
-        # TextGenerator(8, 1000),
+        TextGenerator(8, 1000),
         # VersionGenerator(10, 1000),
     ]
 )

@@ -57,7 +57,7 @@ extern "C" {
 
 // spinning macro (can be dangerous)
 #define HAL_SPIN(x)                                                            \
-  while (x != HAL_OK) {                                                        \
+  while (x == HAL_BUSY) {                                                      \
   }
 /* USER CODE END EM */
 

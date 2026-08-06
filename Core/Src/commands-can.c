@@ -501,9 +501,9 @@ CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
   if (HAL_GPIO_ReadPin(baudInput3Port, baudInput3Pin) == GPIO_PIN_RESET) {
     // 670kb baud (more accurately 666.666 baud)
     canInterface->Init.Prescaler = 4;
-    canInterface->Init.TimeSeg1 = 15;
-    canInterface->Init.TimeSeg2 = 2;
-    canInterface->Init.SyncJumpWidth = 1;
+    canInterface->Init.TimeSeg1 = CAN_BS1_15TQ;
+    canInterface->Init.TimeSeg2 = CAN_BS2_2TQ;
+    canInterface->Init.SyncJumpWidth = CAN_SJW_1TQ;
 
     // logging message
     HAL_SPIN(HAL_UART_Transmit_IT(uart, (uint8_t *)"Bitrate = 670kbps\n", 18));
@@ -512,9 +512,9 @@ CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
              GPIO_PIN_RESET) {
     // 500kb baud
     canInterface->Init.Prescaler = 6;
-    canInterface->Init.TimeSeg1 = 13;
-    canInterface->Init.TimeSeg2 = 2;
-    canInterface->Init.SyncJumpWidth = 1;
+    canInterface->Init.TimeSeg1 = CAN_BS1_13TQ;
+    canInterface->Init.TimeSeg2 = CAN_BS2_2TQ;
+    canInterface->Init.SyncJumpWidth = CAN_SJW_1TQ;
 
     // logging message
     HAL_SPIN(HAL_UART_Transmit_IT(uart, (uint8_t *)"Bitrate = 500kbps\n", 18));
@@ -523,9 +523,9 @@ CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
              GPIO_PIN_RESET) {
     // 250kb baud
     canInterface->Init.Prescaler = 12;
-    canInterface->Init.TimeSeg1 = 13;
-    canInterface->Init.TimeSeg2 = 2;
-    canInterface->Init.SyncJumpWidth = 1;
+    canInterface->Init.TimeSeg1 = CAN_BS1_13TQ;
+    canInterface->Init.TimeSeg2 = CAN_BS2_2TQ;
+    canInterface->Init.SyncJumpWidth = CAN_SJW_1TQ;
 
     // logging message
     HAL_SPIN(HAL_UART_Transmit_IT(uart, (uint8_t *)"Bitrate = 250kbps\n", 18));
@@ -533,9 +533,9 @@ CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
   } else {
     // 125kb baud
     canInterface->Init.Prescaler = 24;
-    canInterface->Init.TimeSeg1 = 13;
-    canInterface->Init.TimeSeg2 = 2;
-    canInterface->Init.SyncJumpWidth = 1;
+    canInterface->Init.TimeSeg1 = CAN_BS1_13TQ;
+    canInterface->Init.TimeSeg2 = CAN_BS2_2TQ;
+    canInterface->Init.SyncJumpWidth = CAN_SJW_1TQ;
 
     // logging message
     HAL_SPIN(HAL_UART_Transmit_IT(uart, (uint8_t *)"Bitrate = 125kbps\n", 18));

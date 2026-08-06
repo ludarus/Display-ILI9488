@@ -10,6 +10,16 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+// frequencies for the alarm
+#define CLOCK0 14400
+#define CLOCK1 7200
+#define CLOCK2 4800
+#define CLOCK3 3600
+#define CLOCK4 2880
+#define CLOCK5 2400
+#define CLOCK6 2052
+#define CLOCK7 28800
+
 static const PwmSetting_t frequencySettings[8] = {
     // psc = 0 for highest granularity
     {0, 3332},  {0, 6666},  {0, 9999},  {0, 13332},

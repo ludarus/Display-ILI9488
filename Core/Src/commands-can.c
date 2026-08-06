@@ -48,9 +48,10 @@ static volatile uint8_t readIdx = 0;  // next slot the main loop will read
 #define QUEUE_SIZE 64
 static CanRxMessage_t queue[QUEUE_SIZE];
 // static brightness members (shared state)
+#define BRIGHTNESS_TABLE_SIZE 40
 static uint32_t brightnessTick;
-static uint8_t brightnessVal;
-static uint8_t prevBrightnessVal;
+static uint8_t brightnessIdx;
+static uint8_t prevBrightnessIdx;
 static uint16_t flashOffset;
 
 // alarm members
@@ -90,9 +91,9 @@ HAL_StatusTypeDef brightnessInit() {
 
       HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
-      prevBrightnessVal = *(__IO uint8_t *)(offset + BRIGHTNESS_PAGE_ADDR);
+      prevBrightnessIdx = *(__IO uint8_t *)(offset + BRIGHTNESS_PAGE_ADDR);
 
-      return ILI9488_SetBrightness(spi, backlightTimer, prevBrightnessVal);
+      return ILI9488_SetBrightness(spi, backlightTimer, prevBrightnessIdx);
     }
   }
 
@@ -101,7 +102,7 @@ HAL_StatusTypeDef brightnessInit() {
   HAL_UART_Transmit_IT(uart, (uint8_t *)"could not find previous flash value\n",
                        36);
 
-  return ILI9488_SetBrightness(spi, backlightTimer, 0xFF);
+  return ILI9488_SetBrightness(spi, backlightTimer, 29);
 }
 
 // handles. TODO finish them when given the objnum and groupnum to image mapping
@@ -270,26 +271,26 @@ HAL_StatusTypeDef CMD_DispGrp(CanRxMessage_t *msg) {
   // assuming this means DLC = 2 bytes
 
   // extracting LSB byte
-  uint8_t lsb = msg->data[0];
+  // uint8_t lsb = msg->data[0];
 
   // extracting MSB byte
-  uint16_t msb = msg->data[1] << 8;
+  // uint16_t msb = msg->data[1] << 8;
 
-  uint16_t grpNum = lsb | msb;
+  // uint16_t grpNum = lsb | msb;
 
-  uint8_t index = msg->data[2];
+  // uint8_t index = msg->data[2];
 
   // if the objNum is out of range
-  if (grpNum > 149 || grpNum == 0) {
-    return HAL_ERROR;
-  }
+  // if (grpNum > 149 || grpNum == 0) {
+  // return HAL_ERROR;
+  // }
 
-  const Obj_t *obj = &objects[grpNum - 1];
+  // const Obj_t *obj = &objects[grpNum - 1];
 
   // if the object isn't a group table type
-  if (obj->type != GROUPTABLE_OBJ_TYPE) {
-    return HAL_ERROR;
-  }
+  // if (obj->type != GROUPTABLE_OBJ_TYPE) {
+  // return HAL_ERROR;
+  // }
 
   // display according image
   // ILI9488_LOAD_IMAGE(spi, uint16_t x, uint16_t y, const Image_t *image,
@@ -319,7 +320,6 @@ HAL_StatusTypeDef CMD_SendVersion(CanRxMessage_t *msg) {
   versionHeader.IDE = CAN_ID_STD;
   versionHeader.RTR = CAN_RTR_DATA;
 
-  // TODO: confirm this
   versionHeader.TransmitGlobalTime = DISABLE;
 
   uint32_t mailbox;
@@ -341,27 +341,47 @@ HAL_StatusTypeDef CMD_SysFail(CanRxMessage_t *msg) {
 
 HAL_StatusTypeDef CMD_Brightness(CanRxMessage_t *msg) {
   // cmdNum 0x89
-  brightnessVal = msg->data[0];
+  uint8_t brightnessFlag = msg->data[0];
+  uint32_t thisTick = HAL_GetTick();
 
-  // setting brightness
-  HAL_TRY(ILI9488_SetBrightness(spi, backlightTimer, brightnessVal));
-
-  // setting flag to wait 5 seconds
-  brightnessTick = HAL_GetTick();
-
-  // if max value has been reached TODO: check if this should only happen after
-  // the max value is already set
-  if (brightnessVal == 0xFF || brightnessVal == 0) {
-    ALARM_StartBeep(alarmTimer);
-    alarmTick = brightnessTick;
+  switch (brightnessFlag) {
+  case 1:
+    // decrement brightness
+    if (brightnessIdx == 0) {
+      // start beep
+      ALARM_StartBeep(alarmTimer);
+      alarmTick = thisTick;
+    } else {
+      brightnessIdx--;
+    }
+    break;
+  case 2:
+    // increment brightness
+    if (brightnessIdx == BRIGHTNESS_TABLE_SIZE - 1) {
+      // start beep
+      ALARM_StartBeep(alarmTimer);
+      alarmTick = thisTick;
+    } else {
+      brightnessIdx++;
+    }
+    break;
+  case 3:
+    // reset brightness
+    brightnessIdx = 29;
+    break;
   }
 
-  // diagnostic logging
-  // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-  //                        "changed display brightness to %u\n",
-  //                        brightnessVal);
+  // setting brightness
+  HAL_TRY(ILI9488_SetBrightness(spi, backlightTimer, brightnessIdx));
 
-  // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+  // setting flag to wait 5 seconds
+  brightnessTick = thisTick;
+
+  // diagnostic logging
+  uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+                         "brightIdx = %u\n", brightnessIdx);
+
+  HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
   return HAL_OK;
 }
@@ -585,7 +605,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
   }
 
   // if it's been 5 seconds since last brightness change
-  if (brightnessVal != prevBrightnessVal && brightnessTick != 0 &&
+  if (brightnessIdx != prevBrightnessIdx && brightnessTick != 0 &&
       currentTick - brightnessTick > 5000) {
     brightnessTick = 0;
 
@@ -618,7 +638,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
 
     // minimum flash write resolution is 16 bit (halfword)
     // making second part off to indicate a write
-    uint16_t halfword = (uint16_t)brightnessVal | 0x0000u;
+    uint16_t halfword = (uint16_t)brightnessIdx | 0x0000u;
 
     // TODO error handling here
     HAL_StatusTypeDef progStatus =
@@ -633,7 +653,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
     // incrementing offset
     flashOffset += 2;
 
-    prevBrightnessVal = brightnessVal;
+    prevBrightnessIdx = brightnessIdx;
 
     // diagnostic logging
     HAL_UART_Transmit_IT(
@@ -641,13 +661,13 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
   }
 
   // logging
-  if (readIdx != writeIdx) {
-    // logging
-    uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-                           "%u, %u\n", readIdx, writeIdx);
-
-    HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
-  }
+  // if (readIdx != writeIdx) {
+  //   // logging
+  //   uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+  //                          "%u, %u\n", readIdx, writeIdx);
+  //
+  //   HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+  // }
 
   // iterating through every message
   while (readIdx != writeIdx) {

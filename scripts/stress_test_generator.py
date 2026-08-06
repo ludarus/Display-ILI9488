@@ -270,9 +270,14 @@ class VersionGenerator(MsgGenerator):
 
 class BrightnessGenerator(MsgGenerator):
     def createData(self, currentTime: int) -> list[CanMsg]:
+        flag = random.randint(1, 2)
+
+        # 5% chance to reset
+        if random.randint(1, 20) == 17:
+            flag = 3
 
         # random brightness value
-        return [CanMsg(0x448, currentTime + self.interval, [random.randint(0, 0xFF)])]
+        return [CanMsg(0x448, currentTime + self.interval, [flag])]
 
 
 class AlarmGenerator(MsgGenerator):
@@ -350,12 +355,12 @@ def send_messages(messages: list[CanMsg]):
 messages = combine_generators(
     [  # List of generators. Probably make some of the intervals prime
         # MsgGenerator(1, 16000),
-        BackgroundGenerator(1013, 25),
-        ImageGenerator(100, 100),
+        # BackgroundGenerator(1013, 25),
+        ImageGenerator(30, 1000),
         # AlarmGenerator(50, 500),
         # BrightnessGenerator(30, 50),
         # FailureGenerator(1000, 5),
-        TextGenerator(8, 1000),
+        # TextGenerator(12, 1000),
         # VersionGenerator(10, 1000),
     ]
 )

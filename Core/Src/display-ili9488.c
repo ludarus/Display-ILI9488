@@ -253,9 +253,9 @@ HAL_StatusTypeDef ILI9488_SetRange(SPI_HandleTypeDef *spi, uint16_t colStart,
 
 // sets brightness of display
 HAL_StatusTypeDef ILI9488_SetBrightness(SPI_HandleTypeDef *spi,
-                                        TIM_HandleTypeDef *tim, uint8_t val) {
+                                        TIM_HandleTypeDef *tim, uint8_t idx) {
 
-  val = brightnessTable[val];
+  uint8_t val = brightnessTable[idx];
   // for pwm driven brightness
   __HAL_TIM_SET_COMPARE(tim, TIM_CHANNEL_1, val);
 

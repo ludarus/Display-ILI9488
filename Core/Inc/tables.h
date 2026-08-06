@@ -18,6 +18,6 @@ extern const Obj_t objects[149];
 extern const uint32_t pixelTable[256];
 
 // table to map brightness power level values to perceived brightness values
-extern const uint8_t brightnessTable[256];
+extern const uint8_t brightnessTable[40];
 
 #endif /* INC_TABLES_H_ */

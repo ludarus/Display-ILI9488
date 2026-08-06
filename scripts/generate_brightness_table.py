@@ -3,12 +3,12 @@
 # trying an inverse gamma curve:
 import math
 
-gamma = 2.2
+gamma = 1.7
 
 min_in = 0
-max_in = 255
+max_in = 39
 
-min_out = 0
+min_out = 1
 max_out = 255
 
 lut = [
@@ -18,7 +18,7 @@ lut = [
 
 
 # printing in C array format:
-carray: str = ["static const uint8_t brightnessTable[] = {"]
+carray: str = ["const uint8_t brightnessTable[] = {"]
 
 for n in lut:
     carray.append(f"\t{n},")

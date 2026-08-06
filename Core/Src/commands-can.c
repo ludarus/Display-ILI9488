@@ -12,16 +12,19 @@
 #include "display-ili9488.h"
 #include "font.h"
 #include "main.h"
+#include "stm32f091xc.h"
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_can.h"
 #include "stm32f0xx_hal_def.h"
 #include "stm32f0xx_hal_flash.h"
 #include "stm32f0xx_hal_flash_ex.h"
+#include "stm32f0xx_hal_gpio.h"
 #include "stm32f0xx_hal_spi.h"
 #include "stm32f0xx_hal_tim.h"
 #include "stm32f0xx_hal_uart.h"
 #include "tables.h"
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 
 // failure image
@@ -420,11 +423,15 @@ static /*const*/ CanCommand_t commands[] = {
 
 // public functions
 
-HAL_StatusTypeDef CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
-                                SPI_HandleTypeDef *displaySpiInterface,
-                                UART_HandleTypeDef *serialLoggingInterface,
-                                TIM_HandleTypeDef *alarmPWMTimerInterface,
-                                TIM_HandleTypeDef *backlightPWMTimerInterface) {
+HAL_StatusTypeDef
+CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
+              SPI_HandleTypeDef *displaySpiInterface,
+              UART_HandleTypeDef *serialLoggingInterface,
+              TIM_HandleTypeDef *alarmPWMTimerInterface,
+              TIM_HandleTypeDef *backlightPWMTimerInterface,
+              GPIO_TypeDef *baudInput1Port, uint16_t baudInput1Pin,
+              GPIO_TypeDef *baudInput2Port, uint16_t baudInput2Pin,
+              GPIO_TypeDef *baudInput3Port, uint16_t baudInput3Pin) {
 
   can = canInterface;
   spi = displaySpiInterface;
@@ -435,6 +442,7 @@ HAL_StatusTypeDef CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
   lastMsgTick = HAL_GetTick();
 
   HAL_Delay(500);
+
   // display brightness
   brightnessInit();
 
@@ -480,6 +488,61 @@ HAL_StatusTypeDef CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
   sFilterConfig.FilterActivation = CAN_FILTER_ENABLE;
   HAL_TRY(HAL_CAN_ConfigFilter(canInterface, &sFilterConfig));
 
+  // setting CAN baud rate based off of input pins
+  // reminder: base clock frequency = 48MHz
+  canInterface->Init.Mode = CAN_MODE_NORMAL;
+  canInterface->Init.TimeTriggeredMode = DISABLE;
+  canInterface->Init.AutoBusOff = DISABLE;
+  canInterface->Init.AutoWakeUp = DISABLE;
+  canInterface->Init.AutoRetransmission = ENABLE;
+  canInterface->Init.ReceiveFifoLocked = DISABLE;
+  canInterface->Init.TransmitFifoPriority = DISABLE;
+
+  if (HAL_GPIO_ReadPin(baudInput3Port, baudInput3Pin) == GPIO_PIN_RESET) {
+    // 670kb baud (more accurately 666.666 baud)
+    canInterface->Init.Prescaler = 4;
+    canInterface->Init.TimeSeg1 = 15;
+    canInterface->Init.TimeSeg2 = 2;
+    canInterface->Init.SyncJumpWidth = 1;
+
+    // logging message
+    HAL_SPIN(HAL_UART_Transmit_IT(uart, (uint8_t *)"Bitrate = 670kbps\n", 18));
+
+  } else if (HAL_GPIO_ReadPin(baudInput2Port, baudInput2Pin) ==
+             GPIO_PIN_RESET) {
+    // 500kb baud
+    canInterface->Init.Prescaler = 6;
+    canInterface->Init.TimeSeg1 = 13;
+    canInterface->Init.TimeSeg2 = 2;
+    canInterface->Init.SyncJumpWidth = 1;
+
+    // logging message
+    HAL_SPIN(HAL_UART_Transmit_IT(uart, (uint8_t *)"Bitrate = 500kbps\n", 18));
+
+  } else if (HAL_GPIO_ReadPin(baudInput1Port, baudInput1Pin) ==
+             GPIO_PIN_RESET) {
+    // 250kb baud
+    canInterface->Init.Prescaler = 12;
+    canInterface->Init.TimeSeg1 = 13;
+    canInterface->Init.TimeSeg2 = 2;
+    canInterface->Init.SyncJumpWidth = 1;
+
+    // logging message
+    HAL_SPIN(HAL_UART_Transmit_IT(uart, (uint8_t *)"Bitrate = 250kbps\n", 18));
+
+  } else {
+    // 125kb baud
+    canInterface->Init.Prescaler = 24;
+    canInterface->Init.TimeSeg1 = 13;
+    canInterface->Init.TimeSeg2 = 2;
+    canInterface->Init.SyncJumpWidth = 1;
+
+    // logging message
+    HAL_SPIN(HAL_UART_Transmit_IT(uart, (uint8_t *)"Bitrate = 125kbps\n", 18));
+  }
+
+  // initializing can
+  HAL_TRY(HAL_CAN_Init(canInterface));
   // starting device
   HAL_TRY(HAL_CAN_Start(canInterface));
 
@@ -513,7 +576,8 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
   // if the alarm has been on for 100 ms
   if (currentTick - alarmTick >= 100 && alarmTick != 0) {
 
-    // HAL_UART_Transmit_IT(uart, (uint8_t *)"Brightness beep completed\n", 26);
+    // HAL_UART_Transmit_IT(uart, (uint8_t *)"Brightness beep completed\n",
+    // 26);
 
     ALARM_StopBeep(alarmTimer);
 

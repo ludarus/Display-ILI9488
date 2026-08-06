@@ -23,11 +23,15 @@
 // TODO find out what type 9 is
 #define UNKNOWN_OBJ_TYPE 9
 
-HAL_StatusTypeDef CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
-                                SPI_HandleTypeDef *displaySpiInterface,
-                                UART_HandleTypeDef *serialLoggingInterface,
-                                TIM_HandleTypeDef *alarmPWMTimerInterface,
-                                TIM_HandleTypeDef *backlightPWMTimerInterface);
+HAL_StatusTypeDef
+CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
+              SPI_HandleTypeDef *displaySpiInterface,
+              UART_HandleTypeDef *serialLoggingInterface,
+              TIM_HandleTypeDef *alarmPWMTimerInterface,
+              TIM_HandleTypeDef *backlightPWMTimerInterface,
+              GPIO_TypeDef *baudInput1Port, uint16_t baudInput1Pin,
+              GPIO_TypeDef *baudInput2Port, uint16_t baudInput2Pin,
+              GPIO_TypeDef *baudInput3Port, uint16_t baudInput3Pin);
 HAL_StatusTypeDef CAN_CMDS_Process(void);
 
 typedef struct {

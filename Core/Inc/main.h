@@ -79,8 +79,14 @@ void Error_Handler(void);
 #define USART_RX_GPIO_Port GPIOA
 #define ALARM_Pin GPIO_PIN_4
 #define ALARM_GPIO_Port GPIOA
-#define DISPLAY_DC_Pin GPIO_PIN_6
+#define DISPLAY_DC_Pin GPIO_PIN_4
 #define DISPLAY_DC_GPIO_Port GPIOC
+#define BAUD_INPUT3_Pin GPIO_PIN_5
+#define BAUD_INPUT3_GPIO_Port GPIOC
+#define BAUD_INPUT2_Pin GPIO_PIN_6
+#define BAUD_INPUT2_GPIO_Port GPIOC
+#define BAUD_INPUT1_Pin GPIO_PIN_8
+#define BAUD_INPUT1_GPIO_Port GPIOC
 #define SWITCH_POWER_Pin GPIO_PIN_8
 #define SWITCH_POWER_GPIO_Port GPIOA
 #define TMS_Pin GPIO_PIN_13

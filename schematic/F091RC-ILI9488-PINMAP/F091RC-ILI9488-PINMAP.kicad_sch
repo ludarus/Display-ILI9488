@@ -4,6 +4,12 @@
 	(generator_version "10.0")
 	(uuid "da5a1e6a-2605-436b-a30c-1027586d5c0a")
 	(paper "A4")
+	(title_block
+		(title "Pin Mapping F091RC and ILI9488 - Raymond Protocol")
+		(date "2026-08-07")
+		(rev "1.1")
+		(company "VMC")
+	)
 	(lib_symbols
 		(symbol "Connector_Generic:Conn_01x14"
 			(pin_names
@@ -3553,6 +3559,16 @@
 	)
 	(wire
 		(pts
+			(xy 52.07 132.08) (xy 58.42 132.08)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "dddf005f-47b7-4090-a055-facc56a14f42")
+	)
+	(wire
+		(pts
 			(xy 21.59 114.3) (xy 39.37 114.3)
 		)
 		(stroke
@@ -3842,6 +3858,17 @@
 			(justify left bottom)
 		)
 		(uuid "830d5d51-2f73-4552-bfee-1ac0c2d562fc")
+	)
+	(label "ALARM"
+		(at 58.42 132.08 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+				(color 255 153 0 1)
+			)
+			(justify left bottom)
+		)
+		(uuid "87e20c71-8e75-4f84-8158-f4e5da3c54ce")
 	)
 	(label "DISPLAY_DC"
 		(at 149.86 134.62 0)

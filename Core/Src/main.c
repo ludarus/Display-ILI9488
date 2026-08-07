@@ -575,7 +575,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(DISPLAY_DC_GPIO_Port, DISPLAY_DC_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, SWITCH_POWER_Pin|DISPLAY_CS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(DISPLAY_CS_GPIO_Port, DISPLAY_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(DISPLAY_RESET_GPIO_Port, DISPLAY_RESET_Pin, GPIO_PIN_RESET);
@@ -601,12 +601,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SWITCH_POWER_Pin DISPLAY_CS_Pin */
-  GPIO_InitStruct.Pin = SWITCH_POWER_Pin|DISPLAY_CS_Pin;
+  /*Configure GPIO pin : DISPLAY_CS_Pin */
+  GPIO_InitStruct.Pin = DISPLAY_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(DISPLAY_CS_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : SWITCH3_Pin */
   GPIO_InitStruct.Pin = SWITCH3_Pin;

@@ -87,8 +87,6 @@ void Error_Handler(void);
 #define BAUD_INPUT2_GPIO_Port GPIOC
 #define BAUD_INPUT1_Pin GPIO_PIN_8
 #define BAUD_INPUT1_GPIO_Port GPIOC
-#define SWITCH_POWER_Pin GPIO_PIN_8
-#define SWITCH_POWER_GPIO_Port GPIOA
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14

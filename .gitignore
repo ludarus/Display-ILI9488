@@ -6,3 +6,4 @@ Drivers/
 *.list
 compile_commands.json
 .clangd
+schematic/*/.history/

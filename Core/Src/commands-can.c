@@ -133,9 +133,9 @@ HAL_StatusTypeDef CMD_DispBg(CanRxMessage_t *msg) {
     bg = (Image_t *)&File_005_ObjNum_004_480x320_6_18_26;
   }
 
-  HAL_TRY(ILI9488_SetBackground(bg));
+  HAL_TRY(ILI9488_SetBackground_Mono(bg));
 
-  HAL_SPIN(ILI9488_LoadImage(spi, 0, 0, bg, true, false, true));
+  HAL_SPIN(ILI9488_LoadImage_Mono(spi, 0, 0, bg, true, false, true));
 
   // display according image logging
   // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
@@ -202,7 +202,7 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
   if (remainingChars == 0 && target != 0) {
     // displaying
     // HAL_StatusTypeDef displayStatus =
-    HAL_SPIN(ILI9488_LoadText(spi, objects[objNum - 1].x, objects[objNum - 1].y,
+    HAL_SPIN(ILI9488_LoadText_Mono(spi, objects[objNum - 1].x, objects[objNum - 1].y,
                               charArray, target, font, FONTSIZE, CHARWIDTH,
                               CHARHEIGHT, false, true, true));
 
@@ -252,7 +252,7 @@ HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
   }
 
   // display according image
-  HAL_SPIN(ILI9488_LoadImage(spi, obj->x, obj->y, obj->img, false, true, true));
+  HAL_SPIN(ILI9488_LoadImage_Mono(spi, obj->x, obj->y, obj->img, false, true, true));
 
   // diagnostic logging
   // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
@@ -334,7 +334,7 @@ HAL_StatusTypeDef CMD_SysFail(CanRxMessage_t *msg) {
   HAL_UART_Transmit_IT(uart, (uint8_t *)"ERROR: SYSTEM FAILURE RECEIVED \n",
                        32);
 
-  ILI9488_LoadImage(spi, 0, 0, &SYSFAIL_480x320, true, false, true);
+  ILI9488_LoadImage_Mono(spi, 0, 0, &SYSFAIL_480x320, true, false, true);
   return HAL_OK;
   // return ILI9488_LoadImage(spi, 0, 0, &SYSFAIL_480x320, true, false, true);
 }
@@ -588,7 +588,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
         uart, (uint8_t *)"TIMEOUT: no command received in the last 4000ms\n",
         48);
 
-    ILI9488_LoadImage(spi, 0, 0, &SYSFAIL_480x320, true, false, true);
+    ILI9488_LoadImage_Mono(spi, 0, 0, &SYSFAIL_480x320, true, false, true);
 
     lastMsgTick = 0;
   }

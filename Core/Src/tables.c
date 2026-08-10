@@ -367,7 +367,7 @@ const Obj_t objects[] = {
 
 // lookup table for possible 4 byte packages
 // output of .generate_lookup_table.py
-const uint32_t bgPixelTable[256] = {
+const uint32_t pixelTable[256] = {
     0x00000000, 0x00000060, 0x00000006, 0x00000066, 0x00006000, 0x00006060,
     0x00006006, 0x00006066, 0x00000600, 0x00000660, 0x00000606, 0x00000666,
     0x00006600, 0x00006660, 0x00006606, 0x00006666, 0x00600000, 0x00600060,

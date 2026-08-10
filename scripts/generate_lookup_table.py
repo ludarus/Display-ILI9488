@@ -32,7 +32,7 @@ def main():
         OFF = 0b1110
 
     # outputs a sequence of 256 uint32_t's that maps a bitpacked byte into it's expanded version with the specified colours above
-    print("static const uint32_t bgPixelTable[256] = {")
+    print("static const uint32_t pixelTable[256] = {")
 
     for i in range(256):
         result = 0

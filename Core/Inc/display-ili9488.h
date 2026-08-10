@@ -49,7 +49,7 @@
 typedef struct {
   // state variables
   volatile bool currentlyDrawing;
-  volatile bool drawingBg;
+  volatile bool currentlyLoading;
   // buffer toggle
   volatile uint8_t activeBuf;
 
@@ -63,17 +63,12 @@ typedef struct {
   uint16_t height; // in pixels
 
   // --- cursor location when loading image ---
-  uint32_t fillBgPos;
+  uint32_t fillPos;
   uint16_t fillCol;
   uint16_t rowSkip;
 
-  uint32_t fillImgPos;
-  uint32_t fillImgRem;
-  uint32_t fillImgIdx;
-
-  uint8_t colour;
-  Image_t *image;
-
+  // --- background image ---
+  Image_t *backgroundImage;
 
   // --- Progress tracking, accessed together during transfer ---
   volatile uint32_t imageProgress; // in pixels
@@ -82,30 +77,25 @@ typedef struct {
 
   // large bit-packed buffer last: no alignment requirement, so it can
   // safely absorb any odd byte count without forcing padding after it
-  uint8_t background[((480 * 320) + 7) / 8]; // in bytes
+  uint8_t screenCopy[((480 * 320) + 7) / 8]; // in bytes
 } ImageTransferState_t;
 
 // public functions
 HAL_StatusTypeDef ILI9488_SetBrightness(SPI_HandleTypeDef *spi,
                                         TIM_HandleTypeDef *tim, uint8_t val);
-HAL_StatusTypeDef ILI9488_SetBackground_Mono(const Image_t *bg);
-HAL_StatusTypeDef ILI9488_SetBackground_Col(SPI_HandleTypeDef *spi,
-                                            const Image_t *bg);
+HAL_StatusTypeDef ILI9488_SetBackground(const Image_t *bg);
 HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
                                TIM_HandleTypeDef *backlightTimer);
-HAL_StatusTypeDef ILI9488_Refresh_Mono(SPI_HandleTypeDef *spi);
-HAL_StatusTypeDef ILI9488_LoadImage_Mono(SPI_HandleTypeDef *spi, uint16_t x_p,
-                                         uint16_t y_p, const Image_t *image,
-                                         bool overWrite, bool bg, bool draw);
-HAL_StatusTypeDef
-ILI9488_LoadText_Mono(SPI_HandleTypeDef *spi, uint16_t x_p, uint16_t y_p,
-                      uint8_t text[], uint8_t textSize, const Character_t *font,
-                      const uint8_t fontCount, // number of characters in font
-                      const uint8_t charWidth_p, const uint16_t charHeight_p,
-                      bool overWrite, bool bg, bool draw);
-HAL_StatusTypeDef ILI9488_BlitBackground(SPI_HandleTypeDef *spi);
-HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
+HAL_StatusTypeDef ILI9488_Refresh(SPI_HandleTypeDef *spi);
+HAL_StatusTypeDef ILI9488_LoadImage(SPI_HandleTypeDef *spi, uint16_t x_p,
                                     uint16_t y_p, const Image_t *image,
-                                    const uint8_t colour);
+                                    bool overWrite, bool bg, bool draw);
+HAL_StatusTypeDef
+ILI9488_LoadText(SPI_HandleTypeDef *spi, uint16_t x_p, uint16_t y_p,
+                 uint8_t text[], uint8_t textSize, const Character_t *font,
+                 const uint8_t fontCount, // number of characters in font
+                 const uint8_t charWidth_p, const uint16_t charHeight_p,
+                 bool overWrite, bool bg, bool draw);
+HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi);
 
 #endif /* INC_DISPLAY_ILI9488_H_ */

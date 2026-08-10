@@ -15,7 +15,7 @@ extern const Obj_t objects[149];
 
 // lookup table for possible 4 byte packages
 // output of .generate_lookup_table.py
-extern const uint32_t bgPixelTable[256];
+extern const uint32_t pixelTable[256];
 
 // table to map brightness power level values to perceived brightness values
 extern const uint8_t brightnessTable[40];

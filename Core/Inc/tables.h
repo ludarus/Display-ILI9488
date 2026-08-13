@@ -20,4 +20,6 @@ extern const uint32_t bgPixelTable[256];
 // table to map brightness power level values to perceived brightness values
 extern const uint8_t brightnessTable[40];
 
+extern const uint16_t nibbleTable[16];
+
 #endif /* INC_TABLES_H_ */

@@ -418,3 +418,23 @@ const uint8_t brightnessTable[] = {
     46,  51,  57,  63,  69,  76,  83,  90,  97,  105, 112, 120, 128, 137,
     146, 154, 164, 173, 182, 192, 202, 212, 223, 233, 244, 255,
 };
+
+// spreads a 4-bit nibble into 4 output nibbles (0xF where set, 0x0 where clear)
+const uint16_t nibbleTable[16] = {
+    0x0000,
+	 0x000F,
+	 0x00F0,
+	 0x00FF,
+	 0x0F00,
+	 0x0F0F,
+	 0x0FF0,
+	 0x0FFF,
+    0xF000,
+	 0xF00F,
+	 0xF0F0,
+	 0xF0FF,
+	 0xFF00,
+	 0xFF0F,
+	 0xFFF0,
+	 0xFFFF,
+};

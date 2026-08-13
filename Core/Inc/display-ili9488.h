@@ -33,6 +33,18 @@
 // the size of the buffers in bytes that will store the expanded image data
 #define CHUNK 2048
 
+// draw state enums (DS = draw status)
+#define DS_NONE 0
+#define DS_BG 1
+#define DS_IMG 2
+#define DS_TEXT 3
+
+// colour enums
+// #define COLOR_RED 0b10001000
+// #define COLOR_GREEN 0b01000100
+// #define COLOR_BLUE 0b00100010
+// #define COLOR_PURPLE 0b00100010
+
 // macros to set bits in a bit packed array. Only used for debugging functions
 // sets pixel/bit to 1
 #define SET_PIXEL(array, bit)                                                  \
@@ -48,8 +60,7 @@
 // Reordered for optimal cache utilization and memory efficiency by claude
 typedef struct {
   // state variables
-  volatile bool currentlyDrawing;
-  volatile bool drawingBg;
+  volatile uint8_t drawStatus;
   // buffer toggle
   volatile uint8_t activeBuf;
 
@@ -57,28 +68,32 @@ typedef struct {
   uint8_t buf[2][CHUNK] __attribute__((aligned(4)));
 
   // --- Image transfer geometry, accessed together when setting up a transfer
-  uint16_t x;      // in bytes
-  uint16_t y;      // in pixels
-  uint16_t width;  // in bytes
-  uint16_t height; // in pixels
+  uint16_t width; // in bytes
 
-  // --- cursor location when loading image ---
+  // --- cursor location when loading bg, image, and text ---
   uint32_t fillBgPos;
-  uint16_t fillCol;
-  uint16_t rowSkip;
+  uint16_t fillBgCol;
+  uint16_t rowSkipBg;
 
   uint32_t fillImgPos;
-  uint32_t fillImgRem;
+  uint8_t fillImgRem;
   uint32_t fillImgIdx;
 
+  // --- things for live decompiling ---
   uint8_t colour;
   Image_t *image;
 
+  Character_t *font;
+  uint8_t *text;
+  uint8_t currentChar;
+  uint8_t textSize;
+  uint16_t textPos_b;
+  uint16_t textCol_b;
+  uint8_t charWidth_b;
 
   // --- Progress tracking, accessed together during transfer ---
-  volatile uint32_t imageProgress; // in pixels
-  uint32_t imageTarget;            // in bytes/pixel
-  uint32_t imageSize;              // in pixels
+  uint32_t progress; // in pixels
+  uint32_t target;   // in bytes/pixel
 
   // large bit-packed buffer last: no alignment requirement, so it can
   // safely absorb any odd byte count without forcing padding after it
@@ -107,5 +122,12 @@ HAL_StatusTypeDef ILI9488_BlitBackground(SPI_HandleTypeDef *spi);
 HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
                                     uint16_t y_p, const Image_t *image,
                                     const uint8_t colour);
+
+HAL_StatusTypeDef
+ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p, uint16_t y_p,
+                 uint8_t text[], const uint16_t textSize,
+                 const Character_t *font, const uint8_t fontCount,
+                 const uint8_t charWidth_p, const uint8_t charHeight_p,
+                 const uint8_t colour);
 
 #endif /* INC_DISPLAY_ILI9488_H_ */

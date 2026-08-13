@@ -167,9 +167,13 @@ int main(void) {
   ILI9488_SetBackground_Col(&hspi1, &File_072_ObjNum_135_480x320_6_18_26);
   HAL_SPIN(HAL_UART_Transmit_IT(&huart2, (uint8_t *)"SET BACKGROUND\n", 15));
 
-  HAL_SPIN(ILI9488_BlitImage(&hspi1, 16, 40, &File_069_ObjNum_124_64x103_6_19_26,
-                             0b11001100));
+  HAL_SPIN(ILI9488_BlitImage(&hspi1, 16, 40,
+                             &File_069_ObjNum_124_64x103_6_19_26, 0b11001100));
+
   HAL_SPIN(HAL_UART_Transmit_IT(&huart2, (uint8_t *)"Blitted image\n", 14));
+
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 0, "Whats up lol", 12, font, FONTSIZE,
+                            CHARWIDTH, CHARHEIGHT, 0b11001100));
 
   //
   // // loading all smaller images to test placement

@@ -14,6 +14,8 @@
 // includes #include "character.h" #include "image.h"
 #include "File_005_ObjNum_004_480x320_6_18_26.h"
 #include "File_006_ObjNum_005_480x320_6_18_26_C.h"
+#include "character.h"
+#include "font.h"
 #include "main.h"
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_def.h"
@@ -32,105 +34,122 @@ static ImageTransferState_t state;
 // private inline utility functions: ----
 
 // walks through RLE encoded image
-static inline void rleAdvance(const uint8_t *data, uint32_t *remaining,
-                              uint32_t *index, uint32_t count) {
+static inline void rleAdvance(const uint8_t *data, uint8_t *remaining_p,
+                              uint32_t *index, uint32_t count_p) {
+  // local clone for pointer aliasing
+  uint32_t idx = (*index);
+  uint8_t rem = (*remaining_p);
+
   // traversing RLE stream to get to targetted value
-  while (count > 0 || *remaining == 0) {
-    if (*remaining > count) {
-      *remaining -= count;
+  while (count_p > 0 || rem == 0) {
+    if (rem > count_p) {
+      rem -= count_p;
+      (*index) = idx;
+      (*remaining_p) = rem;
       return;
     }
-    count -= *remaining;
+    count_p -= rem;
 
-    (*index)++;
-    *remaining = data[*index];
+    idx++;
+    rem = data[idx];
   }
+
+  (*index) = idx;
+  (*remaining_p) = rem;
 }
 
 // replaces sections of an expanded background with image coloured pixels
-static inline void fillExpanded(uint8_t *buffer, uint32_t *position,
-                                uint16_t count, const uint8_t onColour,
-                                bool isOn) {
+static inline void fillExpanded(uint8_t *buf, uint32_t *pos_p, uint16_t count_p,
+                                const uint8_t onColour, bool isOn) {
+  uint32_t pos = (*pos_p);
+
   // position is in pixels, should be mod the size of buffer
   if (isOn) {
     // filling up leading pixel
     // if the current position isn't byte aligned
-    if ((*position) % 2 && count > 0) {
+    if (pos % 2 && count_p > 0) {
       uint8_t mask = onColour >> 4;
       // clearing the second pixel of the byte
-      buffer[((*position) / 2) % CHUNK] &= 0b11110000;
+      buf[(pos / 2) % CHUNK] &= 0b11110000;
       // setting the second pixel
-      buffer[((*position) / 2) % CHUNK] |= mask;
+      buf[(pos / 2) % CHUNK] |= mask;
 
-      count--;
-      (*position)++;
+      count_p--;
+      pos++;
     }
 
     // filling up middle pixels
-    for (uint8_t byte = 0; byte < count / 2; byte++) {
-      buffer[((*position) / 2) % CHUNK] = onColour;
-      (*position) += 2;
+    for (uint8_t byte = 0; byte < count_p / 2; byte++) {
+      buf[(pos / 2) % CHUNK] = onColour;
+      pos += 2;
     }
 
     // filling up trailing pixel
-    if (count % 2) {
+    if (count_p % 2) {
       uint8_t mask = onColour << 4;
       // clearing the first pixel of the byte
-      buffer[((*position) / 2) % CHUNK] &= 0b00001111;
+      buf[(pos / 2) % CHUNK] &= 0b00001111;
       // setting the second pixel
-      buffer[((*position) / 2) % CHUNK] |= mask;
-      (*position)++;
+      buf[(pos / 2) % CHUNK] |= mask;
+      pos++;
     }
 
   } else {
-    (*position) += count;
-    return;
+    pos += count_p;
   }
+
+  (*pos_p) = pos;
 }
 
 // expands a bitpacked byte to the proper data format & colour resolution to
 // transmit to the display.
 // Takes 1 byte which contains 8 pixels worth of information and expands it into
 // 4 bytes of colour coded data
-static inline void expandBgToChunk(uint8_t *background, uint32_t *dst,
-                                   const uint32_t wordCount,
-                                   const uint16_t rowSkip, uint32_t *pos,
-                                   uint16_t *col, const uint16_t width) {
+static inline void expandBgToChunk(uint8_t *background, uint32_t *buf_b,
+                                   const uint32_t count_p,
+                                   const uint16_t rowSkip_b, uint32_t *pos_b,
+                                   uint16_t *col_b, const uint16_t width_b) {
+  uint32_t pos = (*pos_b);
+  uint16_t col = (*col_b);
 
-  for (uint32_t i = 0; i < wordCount; i++) {
-    dst[i] = bgPixelTable[background[(*pos)]];
-    (*pos)++;
-    if (++(*col) == width) {
-      (*col) = 0;
-      (*pos) += rowSkip;
+  for (uint32_t i = 0; i < count_p; i++) {
+    buf_b[i] = bgPixelTable[background[pos]];
+    pos++;
+    if (++col == width_b) {
+      col = 0;
+      pos += rowSkip_b;
     }
   }
 
-  state.fillBgPos = (*pos);
-  state.fillBgCol = (*col);
+  (*pos_b) = pos;
+  (*col_b) = col;
 }
 
 static inline void expandImgToChunk(Image_t *img, const uint8_t colour,
-                                    uint8_t *buf, const uint32_t wordCount) {
+                                    uint8_t *buf_p, const uint32_t count_p,
+                                    uint32_t *pos_p, uint16_t *rem_p,
+                                    uint32_t *index) {
 
-  uint32_t pos_p = state.fillImgPos;
-  const uint32_t target = pos_p + (wordCount << 3);
+  uint32_t pos = (*pos_p);
+  // rem_p should always be 8 bit
+  uint8_t rem = (uint8_t)(*rem_p);
+  uint32_t idx = (*index);
+
+  const uint32_t target = pos + (count_p << 3);
 
   // filling buffer up
   const uint8_t *imgData = img->data;
-  uint32_t imgRem_p = state.fillImgRem;
-  uint32_t imgIdx = state.fillImgIdx;
 
   // walking through the rle data
-  while (pos_p < target) {
-    uint32_t chunk = imgRem_p < (target - pos_p) ? imgRem_p : (target - pos_p);
-    fillExpanded(buf, &pos_p, chunk, colour, imgIdx % 2);
-    rleAdvance(imgData, &imgRem_p, &imgIdx, chunk);
+  while (pos < target) {
+    uint32_t chunk = rem < (target - pos) ? rem : (target - pos);
+    fillExpanded(buf_p, &pos, chunk, colour, idx % 2);
+    rleAdvance(imgData, &rem, &idx, chunk);
   }
 
-  state.fillImgPos = pos_p;
-  state.fillImgRem = imgRem_p;
-  state.fillImgIdx = imgIdx;
+  (*pos_p) = pos;
+  (*rem_p) = rem;
+  (*index) = idx;
 }
 
 // helper function to get the correct mask from the nibble table
@@ -139,82 +158,89 @@ static inline uint32_t fontMask(uint8_t glyphByte) {
          ((uint32_t)nibbleTable[glyphByte >> 4] << 16);
 }
 
-static inline void expandTextToChunk(const uint8_t colour, uint32_t *dst,
-                                     const uint32_t wordCount) {
+static inline void expandTextToChunk(const uint32_t expandedColour,
+                                     uint32_t *buf_b, const uint32_t count_p,
+                                     const Character_t *font, uint8_t *text,
+                                     uint32_t *currentChar, uint32_t *pos_b,
+                                     uint16_t *col_b, const uint8_t charWidth_b,
+                                     const uint8_t textSize) {
 
-  const uint32_t expandedColour = (uint32_t)(colour) | (uint32_t)(colour << 8) |
-                                  (uint32_t)(colour << 16) |
-                                  (uint32_t)(colour << 24);
+  uint32_t cChar = *currentChar;
+  uint32_t pos = *pos_b;
+  uint16_t col = *col_b;
 
-  for (uint32_t i = 0; i < wordCount; i++) {
-    // masking and setting the on pixels to the correct colour
-    uint32_t mask = fontMask(state.font[state.text[state.currentChar] - 32]
-                                 .data[state.textPos_b + state.textCol_b]);
-    dst[i] = (dst[i] & ~mask) | (expandedColour & mask);
+  for (uint32_t i = 0; i < count_p; i++) {
+    uint32_t mask = fontMask(font[text[cChar] - 32].data[pos + col]);
+    buf_b[i] = (buf_b[i] & ~mask) | (expandedColour & mask);
 
-    // looping col cursor because it's the same y coordinate no matter which
-    // char
-
-    if (++state.textCol_b >= state.charWidth_b) {
-      state.textCol_b = 0;
-      state.currentChar++;
-      if (state.currentChar >= state.textSize) {
-        state.textPos_b += state.charWidth_b;
-        state.currentChar = 0;
+    if (++col >= charWidth_b) {
+      col = 0;
+      cChar++;
+      if (cChar >= textSize) {
+        pos += charWidth_b;
+        cChar = 0;
       }
     }
   }
+
+  *currentChar = cChar;
+  *pos_b = pos;
+  *col_b = col;
 }
 
 // bitpacks a contiguous section of a buffer while advancing position pointer
-static inline void fillBitpacked(uint8_t *buffer, uint32_t *position,
-                                 uint16_t count, const bool isOn,
+static inline void fillBitpacked(uint8_t *buf_p, uint32_t *pos_p,
+                                 uint16_t count_p, const bool isOn,
                                  const bool overWrite) {
+  uint32_t pos = (*pos_p);
+
   // filling leading bits
   // if the current position isn't byte aligned
-  if ((*position) % 8 != 0) {
-    uint8_t offset = (*position) % 8;
+  if (pos % 8 != 0) {
+    uint8_t offset = pos % 8;
     uint8_t leading = 8 - offset;
-    leading = leading > count ? count : leading;
+    leading = leading > count_p ? count_p : leading;
     uint8_t mask = (uint8_t)(((1u << leading) - 1u) << offset);
 
     // if the pixels to write are on or off, mask accordingly
     if (isOn) {
-      buffer[(*position) >> 3] |= mask;
+      buf_p[pos >> 3] |= mask;
     } else if (overWrite) {
-      buffer[(*position) >> 3] &= (uint8_t)~mask;
+      buf_p[pos >> 3] &= (uint8_t)~mask;
     }
 
     // decrementing count and incrementing position
-    count -= leading;
-    (*position) += leading;
+    count_p -= leading;
+    pos += leading;
   }
 
   // filling middle bytes
-  for (uint8_t byte = 0; byte < count >> 3; byte++) {
+  for (uint8_t byte = 0; byte < count_p >> 3; byte++) {
     if (isOn) {
       // write byte
-      buffer[(*position) >> 3] = 0xFF;
+      buf_p[pos >> 3] = 0xFF;
     } else if (overWrite) {
       // clear byte
-      buffer[(*position) >> 3] = 0;
+      buf_p[pos >> 3] = 0;
     }
 
     // incrementing global position
-    (*position) += 8;
+    pos += 8;
   }
 
   // filling trailing bits
-  uint8_t trailing = count % 8;
+  uint8_t trailing = count_p % 8;
   // check for unaligned bits
   if (trailing != 0) {
     if (isOn) {
-      buffer[(*position) >> 3] |= 0xFF >> (8 - trailing);
+      buf_p[pos >> 3] |= 0xFF >> (8 - trailing);
     } else if (overWrite) {
-      buffer[(*position) >> 3] &= 0xFF << trailing;
+      buf_p[pos >> 3] &= 0xFF << trailing;
     }
-    (*position) += trailing;
+    pos += trailing;
   }
+
+  (*pos_p) = pos;
 }
 
 // private display functions
@@ -223,14 +249,9 @@ static inline void fillBitpacked(uint8_t *buffer, uint32_t *position,
 void ILI9488_Reset(void) {
   // setting the reset pin to low to signal a reset
   HAL_GPIO_WritePin(DISPLAY_RESET_GPIO_Port, DISPLAY_RESET_Pin, GPIO_PIN_RESET);
-
-  // small delay
   HAL_Delay(10);
-
   // setting the pin to high (default state)
   HAL_GPIO_WritePin(DISPLAY_RESET_GPIO_Port, DISPLAY_RESET_Pin, GPIO_PIN_SET);
-
-  HAL_Delay(100);
 }
 
 // LCD chip select signal, active low
@@ -314,11 +335,86 @@ HAL_StatusTypeDef ILI9488_SetRange(SPI_HandleTypeDef *spi, uint16_t colStart,
 
       (uint8_t)(rowEnd >> 8),
 
-      (uint8_t)(rowEnd & 0xFF)};
+      (uint8_t)(rowEnd & 0xFF)
+
+  };
 
   HAL_TRY(ILI9488_Data(spi, raset, 4));
 
   return HAL_OK;
+}
+
+// draws background to screen
+HAL_StatusTypeDef ILI9488_BlitBackground(SPI_HandleTypeDef *spi) {
+
+  if (state.drawStatus == DS_NONE) {
+
+    // setting status to busy
+    state.drawStatus = DS_BG;
+
+    // setting fill range to only include the last written screen update
+    HAL_TRY(ILI9488_SetRange(spi, 0, ILI9488_WIDTH_PX - 1, 0,
+                             ILI9488_HEIGHT_PX - 1));
+
+    // constants
+    state.width_b = ILI9488_WIDTH_BYTES;
+
+    // buffer progress cursor data
+    state.progress_eb = 0;
+    state.target_eb = (ILI9488_WIDTH_PX * ILI9488_HEIGHT_PX) / 2;
+    state.activeBuf = 0;
+
+    // background cursor data
+    state.bgPos_b = 0;
+    state.bgCol_b = 0;
+    state.bgRowSkip_b = 0;
+
+    // write data command
+    HAL_TRY(ILI9488_Cmd(spi, 0x2C));
+
+    // setting to data mode
+    HAL_GPIO_WritePin(DISPLAY_DC_GPIO_Port, DISPLAY_DC_Pin, GPIO_PIN_SET);
+
+    // selecting spi device
+    ILI9488_Select();
+
+    // double buffering
+
+    // filling up first chunk
+    if (state.target_eb <= CHUNK) {
+      expandBgToChunk(state.background, (uint32_t *)state.buf[state.activeBuf],
+                      state.target_eb / 4, state.bgRowSkip_b, &state.bgPos_b,
+                      &state.bgCol_b, state.width_b);
+
+      HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[state.activeBuf],
+                                   state.target_eb));
+
+      state.progress_eb = state.target_eb;
+    } else {
+      expandBgToChunk(state.background, (uint32_t *)state.buf[state.activeBuf],
+                      PX_PER_CHUNK, state.bgRowSkip_b, &state.bgPos_b,
+                      &state.bgCol_b, state.width_b);
+
+      state.progress_eb += CHUNK;
+      // inverting the active buffer
+      state.activeBuf = !state.activeBuf;
+
+      // filling up second chunk
+      uint32_t remaining_p = (state.target_eb - state.progress_eb) / 4;
+      uint32_t clampedChunk_p =
+          remaining_p < PX_PER_CHUNK ? remaining_p : PX_PER_CHUNK;
+
+      expandBgToChunk(state.background, (uint32_t *)state.buf[state.activeBuf],
+                      clampedChunk_p, state.bgRowSkip_b, &state.bgPos_b,
+                      &state.bgCol_b, state.width_b);
+
+      HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[!state.activeBuf], CHUNK));
+    }
+
+    return HAL_OK;
+  } else {
+    return HAL_BUSY;
+  }
 }
 
 //--------------------------------------------------------------------------------
@@ -339,8 +435,8 @@ HAL_StatusTypeDef ILI9488_SetBrightness(SPI_HandleTypeDef *spi,
   return HAL_OK;
 }
 
-HAL_StatusTypeDef ILI9488_SetBackground_Col(SPI_HandleTypeDef *spi,
-                                            const Image_t *bg) {
+HAL_StatusTypeDef ILI9488_SetBackground(SPI_HandleTypeDef *spi,
+                                        const Image_t *bg) {
 
   // making sure requested image is full screen
   if (bg->height != 320 || bg->width != 480) {
@@ -349,7 +445,7 @@ HAL_StatusTypeDef ILI9488_SetBackground_Col(SPI_HandleTypeDef *spi,
 
   // filling buffer up
   const uint8_t *bgData = bg->data;
-  uint32_t bgRem_p = bgData[0];
+  uint8_t bgRem_p = bgData[0];
   uint32_t bgIdx = 0;
   uint32_t position_p = 0;
 
@@ -371,20 +467,17 @@ HAL_StatusTypeDef ILI9488_SetBackground_Col(SPI_HandleTypeDef *spi,
 HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
                                TIM_HandleTypeDef *backlightTimer) {
 
-  // safety delays. can likely be removed
-  HAL_Delay(200);
-
   // hardware reset
   ILI9488_Reset();
-  HAL_Delay(200);
+  HAL_Delay(10);
 
   // software reset
   HAL_TRY(ILI9488_Cmd(spi, 0x01));
-  HAL_Delay(120);
+  HAL_Delay(10);
 
   // exit sleep mode
   HAL_TRY(ILI9488_Cmd(spi, 0x11));
-  HAL_Delay(120);
+  HAL_Delay(10);
 
   // powering testing switches
   //  HAL_GPIO_WritePin(SWITCH_POWER_GPIO_Port, SWITCH_POWER_Pin, GPIO_PIN_SET);
@@ -396,7 +489,7 @@ HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
   // configuring extended command set for spi write
   HAL_TRY(ILI9488_Cmd(spi, 0xF7));
   uint8_t unlockData[] = {0xA9, 0x51, 0x2C, 0x82};
-  HAL_TRY(ILI9488_Data(spi, &unlockData[0], 2));
+  HAL_TRY(ILI9488_Data(spi, &unlockData[0], 4));
 
   // memory data access control - instruction 36h MADCTL
   HAL_TRY(ILI9488_Cmd(spi, 0x36));
@@ -434,96 +527,7 @@ HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
   // display on
   HAL_TRY(ILI9488_Cmd(spi, 0x29));
 
-  // initializing background to empty image
-  ILI9488_SetBackground_Col(spi,
-                            (Image_t *)&File_006_ObjNum_005_480x320_6_18_26_C);
-
   return HAL_OK;
-}
-
-// temp
-HAL_StatusTypeDef ILI9488_SetBackground_Mono(const Image_t *bg) {
-  return HAL_OK;
-}
-HAL_StatusTypeDef ILI9488_Refresh_Mono(SPI_HandleTypeDef *spi) {
-  return HAL_OK;
-}
-HAL_StatusTypeDef ILI9488_LoadImage_Mono(SPI_HandleTypeDef *spi, uint16_t x_p,
-                                         uint16_t y_p, const Image_t *image,
-                                         bool overWrite, bool bg, bool draw) {
-  return HAL_OK;
-}
-HAL_StatusTypeDef
-ILI9488_LoadText_Mono(SPI_HandleTypeDef *spi, uint16_t x_p, uint16_t y_p,
-                      uint8_t text[], uint8_t textSize, const Character_t *font,
-                      const uint8_t fontCount, // number of characters in font
-                      const uint8_t charWidth_p, const uint16_t charHeight_p,
-                      bool overWrite, bool bg, bool draw) {
-  return HAL_OK;
-}
-
-// x and y should be multiples of 8
-// draws background to screen
-HAL_StatusTypeDef ILI9488_BlitBackground(SPI_HandleTypeDef *spi) {
-
-  if (state.drawStatus == DS_NONE) {
-
-    // setting status to busy
-    state.drawStatus = DS_BG;
-
-    // converting pixels to bytes
-    state.width = ILI9488_WIDTH_BYTES;
-
-    // sending image data. chunking data for DMA and memory saving purposes
-    state.progress = 0;
-    state.target = (ILI9488_WIDTH_PX * ILI9488_HEIGHT_PX) / 2;
-    state.activeBuf = 0;
-    state.fillBgPos = 0;
-    state.fillBgCol = 0;
-    state.rowSkipBg = 0;
-
-    // setting fill range to only include the last written screen update
-    HAL_TRY(ILI9488_SetRange(spi, 0, ILI9488_WIDTH_PX - 1, 0,
-                             ILI9488_HEIGHT_PX - 1));
-    // write data command
-    HAL_TRY(ILI9488_Cmd(spi, 0x2C));
-
-    // setting to data mode
-    HAL_GPIO_WritePin(DISPLAY_DC_GPIO_Port, DISPLAY_DC_Pin, GPIO_PIN_SET);
-
-    // selecting spi device
-    ILI9488_Select();
-
-    // double buffering
-
-    // filling up first chunk
-    if (state.target <= CHUNK) {
-      expandBgToChunk(state.background, (uint32_t *)state.buf[state.activeBuf],
-                      state.target >> 2, state.rowSkipBg, &state.fillBgPos,
-                      &state.fillBgCol, state.width);
-      HAL_TRY(
-          HAL_SPI_Transmit_DMA(spi, state.buf[state.activeBuf], state.target));
-      state.progress = state.target;
-    } else {
-      expandBgToChunk(state.background, (uint32_t *)state.buf[state.activeBuf],
-                      CHUNK >> 2, state.rowSkipBg, &state.fillBgPos,
-                      &state.fillBgCol, state.width);
-      state.progress += CHUNK;
-      state.activeBuf = !state.activeBuf;
-
-      // filling up second chunk
-      uint32_t remaining = state.target - state.progress;
-      expandBgToChunk(state.background, (uint32_t *)state.buf[state.activeBuf],
-                      (remaining < CHUNK ? remaining : CHUNK) >> 2,
-                      state.rowSkipBg, &state.fillBgPos, &state.fillBgCol,
-                      state.width);
-      HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[!state.activeBuf], CHUNK));
-    }
-
-    return HAL_OK;
-  } else {
-    return HAL_BUSY;
-  }
 }
 
 HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
@@ -536,28 +540,33 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
       return HAL_ERROR;
     }
 
+    // setting draw status
     state.drawStatus = DS_IMG;
-
-    // setting x y and width and height
-    state.width = image->width / 8;
-
-    state.activeBuf = 0;
-    state.progress = 0;
-    state.target = (image->width * image->height) / 2;
-
-    state.fillBgPos = (uint32_t)ILI9488_WIDTH_BYTES * y_p + (x_p / 8);
-    state.fillBgCol = 0;
-    state.rowSkipBg = ILI9488_WIDTH_BYTES - state.width;
-    state.image = (Image_t *)image;
-    state.colour = colour;
-
-    state.fillImgPos = 0;
-    state.fillImgIdx = 0;
-    state.fillImgRem = image->data[0];
 
     // setting range
     HAL_TRY(ILI9488_SetRange(spi, x_p, x_p + image->width - 1, y_p,
                              y_p + image->height - 1));
+
+    // constants
+    state.width_b = image->width / 8;
+    state.image = (Image_t *)image;
+    state.colour = (uint32_t)colour;
+
+    // buffer progress cursor data
+    state.progress_eb = 0;
+    state.target_eb = (image->width * image->height) / 2;
+    state.activeBuf = 0;
+
+    // background cursor data
+    state.bgCol_b = 0;
+    state.bgPos_b = (ILI9488_WIDTH_BYTES * y_p) + (x_p / 8);
+    state.bgRowSkip_b = ILI9488_WIDTH_BYTES - state.width_b;
+
+    // image cursor data
+    state.objPos = 0;
+    state.objIdx = 0;
+    state.objCount = image->data[0];
+
     // write data command
     HAL_TRY(ILI9488_Cmd(spi, 0x2C));
 
@@ -568,91 +577,105 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
     ILI9488_Select();
 
     // filling up first chunk
-    if (state.target <= CHUNK) {
+    if (state.target_eb <= CHUNK) {
       expandBgToChunk(state.background, (uint32_t *)state.buf[state.activeBuf],
-                      state.target >> 2, state.rowSkipBg, &state.fillBgPos,
-                      &state.fillBgCol, state.width);
+                      state.target_eb / 4, state.bgRowSkip_b, &state.bgPos_b,
+                      &state.bgCol_b, state.width_b);
       // loading image over background
       expandImgToChunk((Image_t *)image, colour, state.buf[state.activeBuf],
-                       CHUNK / 4);
-      HAL_TRY(
-          HAL_SPI_Transmit_DMA(spi, state.buf[state.activeBuf], state.target));
-      state.progress = state.target;
+                       state.target_eb / 4, &state.objPos, &state.objCount,
+                       &state.objIdx);
+
+      HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[state.activeBuf],
+                                   state.target_eb));
+
+      state.progress_eb = state.target_eb;
+
     } else {
       expandBgToChunk(state.background, (uint32_t *)state.buf[state.activeBuf],
-                      CHUNK >> 2, state.rowSkipBg, &state.fillBgPos,
-                      &state.fillBgCol, state.width);
+                      PX_PER_CHUNK, state.bgRowSkip_b, &state.bgPos_b,
+                      &state.bgCol_b, state.width_b);
       // loading image over background
       expandImgToChunk((Image_t *)image, colour, state.buf[state.activeBuf],
-                       CHUNK / 4);
-      state.progress += CHUNK;
+                       PX_PER_CHUNK, &state.objPos, &state.objCount,
+                       &state.objIdx);
+
+      state.progress_eb += CHUNK;
+      // inverting the active buffer
       state.activeBuf = !state.activeBuf;
 
       // filling up second chunk
-      uint32_t remaining = state.target - state.progress;
+      uint32_t remaining_p = (state.target_eb - state.progress_eb) / 4;
+      uint32_t clampedChunk_p =
+          remaining_p < PX_PER_CHUNK ? remaining_p : PX_PER_CHUNK;
+
       expandBgToChunk(state.background, (uint32_t *)state.buf[state.activeBuf],
-                      (remaining < CHUNK ? remaining : CHUNK) >> 2,
-                      state.rowSkipBg, &state.fillBgPos, &state.fillBgCol,
-                      state.width);
+                      clampedChunk_p, state.bgRowSkip_b, &state.bgPos_b,
+                      &state.bgCol_b, state.width_b);
       // loading image over background
       expandImgToChunk((Image_t *)image, colour, state.buf[state.activeBuf],
-                       (remaining < CHUNK ? remaining : CHUNK) >> 2);
+                       clampedChunk_p, &state.objPos, &state.objCount,
+                       &state.objIdx);
       HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[!state.activeBuf], CHUNK));
     }
+
     return HAL_OK;
   } else {
     return HAL_BUSY;
   }
 }
 
-HAL_StatusTypeDef
-ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p, uint16_t y_p,
-                 uint8_t text[], const uint16_t textSize,
-                 const Character_t *font, const uint8_t fontCount,
-                 const uint8_t charWidth_p, const uint8_t charHeight_p,
-                 const uint8_t colour) {
+HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
+                                   uint16_t y_p, uint8_t text[],
+                                   const uint16_t textSize,
+                                   const uint8_t colour) {
+
   if (state.drawStatus == DS_NONE) {
     // checking to make sure the text is in bounds
-    if (y_p + charHeight_p > ILI9488_HEIGHT_PX ||
-        x_p + charWidth_p > ILI9488_WIDTH_PX) {
+    const uint16_t boundsWidth_p = CHARWIDTH * textSize;
+
+    if (y_p + CHARHEIGHT > ILI9488_HEIGHT_PX ||
+        x_p + boundsWidth_p > ILI9488_WIDTH_PX) {
       return HAL_ERROR;
     }
 
     // text processing to make sure all characters are displayable
     for (uint8_t i = 0; i < textSize; i++) {
       // if not displayable set to blank character
-      if (text[i] < 32 || text[i] >= fontCount + 32) {
+      if (text[i] < 32 || text[i] >= FONTSIZE + 32) {
         text[i] = 32;
       }
     }
 
+    // setting draw status to busy
     state.drawStatus = DS_TEXT;
-
-    uint16_t boundsWidth_p = charWidth_p * textSize; // in pixels
-
-    // setting x y and width and height
-    state.width = boundsWidth_p / 8;
-
-    state.activeBuf = 0;
-    state.progress = 0;
-    state.target = (boundsWidth_p * charHeight_p) / 2;
-
-    state.fillBgPos = (uint32_t)ILI9488_WIDTH_BYTES * y_p + (x_p / 8);
-    state.fillBgCol = 0;
-    state.rowSkipBg = ILI9488_WIDTH_BYTES - state.width;
-
-    state.text = text;
-    state.textSize = textSize;
-    state.colour = colour;
-    state.currentChar = 0;
-    state.textPos_b = 0;
-    state.textCol_b = 0;
-    state.font = font;
-    state.charWidth_b = charWidth_p / 8;
 
     // setting range
     HAL_TRY(ILI9488_SetRange(spi, x_p, x_p + boundsWidth_p - 1, y_p,
-                             y_p + charHeight_p - 1));
+                             y_p + CHARHEIGHT - 1));
+
+    // constants
+    state.width_b = boundsWidth_p / 8;
+    // setting colour to full map for proper text display
+    state.colour = (uint32_t)colour | (uint32_t)(colour << 8) |
+                   (uint32_t)(colour << 16) | (uint32_t)(colour << 24);
+    state.text = text;
+    state.textSize = textSize;
+
+    // buffer progress cursor data
+    state.progress_eb = 0;
+    state.target_eb = (boundsWidth_p * CHARHEIGHT) / 2;
+    state.activeBuf = 0;
+
+    // background cursor data
+    state.bgCol_b = 0;
+    state.bgPos_b = (ILI9488_WIDTH_BYTES * y_p) + (x_p / 8);
+    state.bgRowSkip_b = ILI9488_WIDTH_BYTES - state.width_b;
+
+    // text cursor data
+    state.objPos = 0;
+    state.objIdx = 0;   // current character
+    state.objCount = 0; // column in bytes
 
     // write data command
     HAL_TRY(ILI9488_Cmd(spi, 0x2C));
@@ -664,35 +687,43 @@ ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p, uint16_t y_p,
     ILI9488_Select();
 
     // filling up first chunk
-    if (state.target <= CHUNK) {
+    if (state.target_eb <= CHUNK) {
       expandBgToChunk(state.background, (uint32_t *)state.buf[state.activeBuf],
-                      state.target >> 2, state.rowSkipBg, &state.fillBgPos,
-                      &state.fillBgCol, state.width);
+                      state.target_eb / 4, state.bgRowSkip_b, &state.bgPos_b,
+                      &state.bgCol_b, state.width_b);
+
       expandTextToChunk(state.colour, (uint32_t *)state.buf[state.activeBuf],
-                        CHUNK / 4);
+                        state.target_eb / 4, font, state.text, &state.objIdx,
+                        &state.objPos, &state.objCount, CHARWIDTH / 8,
+                        state.textSize);
 
-      HAL_TRY(
-          HAL_SPI_Transmit_DMA(spi, state.buf[state.activeBuf], state.target));
+      HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[state.activeBuf],
+                                   state.target_eb));
 
-      state.progress = state.target;
+      state.progress_eb = state.target_eb;
     } else {
       expandBgToChunk(state.background, (uint32_t *)state.buf[state.activeBuf],
-                      CHUNK >> 2, state.rowSkipBg, &state.fillBgPos,
-                      &state.fillBgCol, state.width);
+                      PX_PER_CHUNK, state.bgRowSkip_b, &state.bgPos_b,
+                      &state.bgCol_b, state.width_b);
       expandTextToChunk(state.colour, (uint32_t *)state.buf[state.activeBuf],
-                        CHUNK / 4);
+                        PX_PER_CHUNK, font, state.text, &state.objIdx,
+                        &state.objPos, &state.objCount, CHARWIDTH / 8,
+                        state.textSize);
 
-      state.progress += CHUNK;
+      state.progress_eb += CHUNK;
       state.activeBuf = !state.activeBuf;
 
       // filling up second chunk
-      uint32_t remaining = state.target - state.progress;
+      uint32_t remaining_p = (state.target_eb - state.progress_eb) / 4;
+      uint32_t clampedChunk_p =
+          remaining_p < PX_PER_CHUNK ? remaining_p : PX_PER_CHUNK;
       expandBgToChunk(state.background, (uint32_t *)state.buf[state.activeBuf],
-                      (remaining < CHUNK ? remaining : CHUNK) >> 2,
-                      state.rowSkipBg, &state.fillBgPos, &state.fillBgCol,
-                      state.width);
+                      clampedChunk_p, state.bgRowSkip_b, &state.bgPos_b,
+                      &state.bgCol_b, state.width_b);
       expandTextToChunk(state.colour, (uint32_t *)state.buf[state.activeBuf],
-                        CHUNK / 4);
+                        clampedChunk_p, font, state.text, &state.objIdx,
+                        &state.objPos, &state.objCount, CHARWIDTH / 8,
+                        state.textSize);
 
       HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[!state.activeBuf], CHUNK));
     }
@@ -709,49 +740,46 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
   if (hspi->Instance == SPI1) {
 
     // done drawing condition
-    if (state.progress >= state.target) {
+    if (state.progress_eb >= state.target_eb) {
       ILI9488_Deselect();
       state.drawStatus = DS_NONE;
       return;
     }
 
     // partial chunk remaining
-    else if (state.target - state.progress < CHUNK) {
+    else if (state.target_eb - state.progress_eb < CHUNK) {
 
       HAL_SPI_Transmit_DMA(hspi, state.buf[state.activeBuf],
-                           state.target - state.progress);
+                           state.target_eb - state.progress_eb);
       // set progress to finished
-      state.progress += CHUNK;
+      state.progress_eb += CHUNK;
     }
 
     // full chunk remaining
     else {
       // incrementing image progress
-      state.progress += CHUNK;
+      state.progress_eb += CHUNK;
       // transmitting loaded buffer
       HAL_SPI_Transmit_DMA(hspi, state.buf[state.activeBuf], CHUNK);
       // toggling active buffer
       state.activeBuf = !state.activeBuf;
 
+      expandBgToChunk(state.background, (uint32_t *)state.buf[state.activeBuf],
+                      PX_PER_CHUNK, state.bgRowSkip_b, &state.bgPos_b,
+                      &state.bgCol_b, state.width_b);
       switch (state.drawStatus) {
       case DS_BG:
-        expandBgToChunk(
-            state.background, (uint32_t *)state.buf[state.activeBuf], CHUNK / 4,
-            state.rowSkipBg, &state.fillBgPos, &state.fillBgCol, state.width);
         break;
       case DS_IMG:
-        expandBgToChunk(
-            state.background, (uint32_t *)state.buf[state.activeBuf], CHUNK / 4,
-            state.rowSkipBg, &state.fillBgPos, &state.fillBgCol, state.width);
         expandImgToChunk(state.image, state.colour, state.buf[state.activeBuf],
-                         CHUNK / 4);
+                         PX_PER_CHUNK, &state.objPos, &state.objCount,
+                         &state.objIdx);
         break;
       case DS_TEXT:
-        expandBgToChunk(
-            state.background, (uint32_t *)state.buf[state.activeBuf], CHUNK / 4,
-            state.rowSkipBg, &state.fillBgPos, &state.fillBgCol, state.width);
         expandTextToChunk(state.colour, (uint32_t *)state.buf[state.activeBuf],
-                          CHUNK / 4);
+                          PX_PER_CHUNK, font, state.text, &state.objIdx,
+                          &state.objPos, &state.objCount, CHARWIDTH / 8,
+                          state.textSize);
         break;
       }
     }

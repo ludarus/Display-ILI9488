@@ -30,8 +30,9 @@
 // the address that contains the first value in the last page of flash
 #define BRIGHTNESS_PAGE_ADDR 0x0803F800
 
-// the size of the buffers in bytes that will store the expanded image data
+// the size in bytes of the SPI transmission buffers
 #define CHUNK 2048
+#define PX_PER_CHUNK (CHUNK / 4)
 
 // draw state enums (DS = draw status)
 #define DS_NONE 0
@@ -40,10 +41,14 @@
 #define DS_TEXT 3
 
 // colour enums
-// #define COLOR_RED 0b10001000
-// #define COLOR_GREEN 0b01000100
-// #define COLOR_BLUE 0b00100010
-// #define COLOR_PURPLE 0b00100010
+#define COLOR_BLACK (uint8_t)0b00000000
+#define COLOR_WHITE (uint8_t)0b11101110
+#define COLOR_BLUE (uint8_t)0b10001000
+#define COLOR_RED (uint8_t)0b01000100
+#define COLOR_GREEN (uint8_t)0b00100010
+#define COLOR_PURPLE (uint8_t)0b11001100
+#define COLOR_CYAN (uint8_t)0b10101010
+#define COLOR_YELLOW (uint8_t)0b01100110
 
 // macros to set bits in a bit packed array. Only used for debugging functions
 // sets pixel/bit to 1
@@ -55,9 +60,8 @@
 #define GET_PIXEL(array, bit)                                                  \
   (((array)[(bit) / 8] >> ((bit) % 8)) & 1u) // returns 0u or 1u
 
-// struct to store the current state of image rendering,
-// as drawing happens between functions and callbacks so shared state is needed
-// Reordered for optimal cache utilization and memory efficiency by claude
+// chunk is in expanded bytes, 2px = 1eb
+// struct to store the current state of object rendering,
 typedef struct {
   // state variables
   volatile uint8_t drawStatus;
@@ -67,33 +71,38 @@ typedef struct {
   // double buffer. aligned for lookup table casting (uint32_t -> uint8_t)
   uint8_t buf[2][CHUNK] __attribute__((aligned(4)));
 
-  // --- Image transfer geometry, accessed together when setting up a transfer
-  uint16_t width; // in bytes
+  // should be equal to the width of the draw region of the object in bytes
+  uint16_t width_b;
 
-  // --- cursor location when loading bg, image, and text ---
-  uint32_t fillBgPos;
-  uint16_t fillBgCol;
-  uint16_t rowSkipBg;
+  // cursor variables
+  // the column of the cursor for background in bytes
+  uint16_t bgCol_b;
+  // equal to the screen width - draw width in bytes
+  uint16_t bgRowSkip_b;
+  // background position in bytes
+  uint32_t bgPos_b;
 
-  uint32_t fillImgPos;
-  uint8_t fillImgRem;
-  uint32_t fillImgIdx;
+  // progress and target cursors measured in expanded bytes
+  // 1 expanded byte holds 2 pixels
+  uint32_t progress_eb;
+  uint32_t target_eb;
 
-  // --- things for live decompiling ---
-  uint8_t colour;
+  // for img idx, current char. Should be initialized to 0 on draw
+  uint32_t objIdx;
+  // for text position, img position. Should be initialized to 0 on draw
+  uint32_t objPos;
+  // for img remaining, text col. Should be initialized to imgData[0], or 0 on
+  // draw depending on if it's text or an image
+  uint16_t objCount;
+
+  // use 32 bit mask for text, otherwise cast to 8 bit version for images
+  uint32_t colour;
+
   Image_t *image;
 
-  Character_t *font;
   uint8_t *text;
-  uint8_t currentChar;
+  // the number of characters in the text array
   uint8_t textSize;
-  uint16_t textPos_b;
-  uint16_t textCol_b;
-  uint8_t charWidth_b;
-
-  // --- Progress tracking, accessed together during transfer ---
-  uint32_t progress; // in pixels
-  uint32_t target;   // in bytes/pixel
 
   // large bit-packed buffer last: no alignment requirement, so it can
   // safely absorb any odd byte count without forcing padding after it
@@ -103,31 +112,20 @@ typedef struct {
 // public functions
 HAL_StatusTypeDef ILI9488_SetBrightness(SPI_HandleTypeDef *spi,
                                         TIM_HandleTypeDef *tim, uint8_t val);
-HAL_StatusTypeDef ILI9488_SetBackground_Mono(const Image_t *bg);
-HAL_StatusTypeDef ILI9488_SetBackground_Col(SPI_HandleTypeDef *spi,
-                                            const Image_t *bg);
+HAL_StatusTypeDef ILI9488_SetBackground(SPI_HandleTypeDef *spi,
+                                        const Image_t *bg);
 HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
                                TIM_HandleTypeDef *backlightTimer);
-HAL_StatusTypeDef ILI9488_Refresh_Mono(SPI_HandleTypeDef *spi);
-HAL_StatusTypeDef ILI9488_LoadImage_Mono(SPI_HandleTypeDef *spi, uint16_t x_p,
-                                         uint16_t y_p, const Image_t *image,
-                                         bool overWrite, bool bg, bool draw);
-HAL_StatusTypeDef
-ILI9488_LoadText_Mono(SPI_HandleTypeDef *spi, uint16_t x_p, uint16_t y_p,
-                      uint8_t text[], uint8_t textSize, const Character_t *font,
-                      const uint8_t fontCount, // number of characters in font
-                      const uint8_t charWidth_p, const uint16_t charHeight_p,
-                      bool overWrite, bool bg, bool draw);
-HAL_StatusTypeDef ILI9488_BlitBackground(SPI_HandleTypeDef *spi);
 HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
                                     uint16_t y_p, const Image_t *image,
                                     const uint8_t colour);
-
-HAL_StatusTypeDef
-ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p, uint16_t y_p,
-                 uint8_t text[], const uint16_t textSize,
-                 const Character_t *font, const uint8_t fontCount,
-                 const uint8_t charWidth_p, const uint8_t charHeight_p,
-                 const uint8_t colour);
+HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
+                                   uint16_t y_p, uint8_t text[],
+                                   const uint16_t textSize,
+                                   const uint8_t colour);
+// for debugging:
+HAL_StatusTypeDef ILI9488_SetRange(SPI_HandleTypeDef *spi, uint16_t colStart,
+                                   uint16_t colEnd, uint16_t rowStart,
+                                   uint16_t rowEnd);
 
 #endif /* INC_DISPLAY_ILI9488_H_ */

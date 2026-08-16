@@ -47,6 +47,7 @@ class Object:
         objSize: int,
         imgReference: str,
         flashImgReference: str,
+        colour: str = "COLOR_YELLOW",
     ):
         self.objNum = objNum
         self.objType = objType
@@ -59,6 +60,7 @@ class Object:
         self.objSize = objSize
         self.imgReference = imgReference
         self.flashImgReference = flashImgReference
+        self.colour = colour
 
     # print object override
     def __repr__(self):
@@ -74,6 +76,7 @@ flashloc = {self.flashLocation},
 objSize = {self.objSize}
 imgRef = {self.imgReference}
 flashImgRef= {self.flashImgReference}
+colour= {self.colour}
 """
 
 
@@ -339,6 +342,8 @@ def convertToNewScreen(objList: list[Object]) -> list[Object]:
                 obj.yDimension = NEW_HEIGHT
                 obj.size = NEW_WIDTH * NEW_HEIGHT
 
+                # backgrounds have no colour field, and instead are coloured by the lookup table
+
             # image
             case 3:
                 obj.objType = "IMAGE_OBJ_TYPE"
@@ -348,6 +353,8 @@ def convertToNewScreen(objList: list[Object]) -> list[Object]:
                 obj.yLocation *= SCALING_HEIGHT
                 obj.xDimension *= 8 * SCALING_WIDTH
                 obj.yDimension *= SCALING_HEIGHT
+
+                obj.colour = "COLOR_GREEN"
 
             # group table
             case 4:
@@ -362,9 +369,14 @@ def convertToNewScreen(objList: list[Object]) -> list[Object]:
                 # Text seems to be slightly out of bounds on y, so scaling this back a little bit
                 obj.yLocation *= SCALING_HEIGHT
 
+                # chopped off pixels from the font bitmap
+                obj.yLocation += 5
+
                 obj.xLocation = int(obj.xLocation)
                 # tuple
                 textIds.append((obj.objNum, obj.xLocation))
+
+                obj.colour = "COLOR_CYAN"
 
             # ???
             case 9:
@@ -393,12 +405,12 @@ def generateArray(modifiedObjlist: list[Object]) -> list[str]:
     modifiedObjlist.pop(0)
 
     # generates a c array from the modified objlist
-    lines: list[str] = ["static const Obj_t objects[] = {"]
+    lines: list[str] = ["const Obj_t objects[] = {"]
 
     for object in modifiedObjlist:
         lines.append(
             "\t{"
-            + f"{object.objNum}, {object.objType}, {object.xLocation}, {object.yLocation}, {object.flashImgReference}"
+            + f"{object.objNum}, {object.objType}, {object.xLocation}, {object.yLocation}, {object.colour}, {object.flashImgReference}"
             + "},"
         )
 

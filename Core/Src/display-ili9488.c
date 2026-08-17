@@ -34,23 +34,23 @@ static ImageTransferState_t state;
 // Takes 1 byte which contains 8 pixels worth of information and expands it into
 // 4 bytes of colour coded data
 static inline void expandToChunk(uint8_t *screenData, uint32_t *dst,
-                                 const uint32_t count) {
-  uint32_t pos = state.fillPos;
-  uint16_t col = state.fillCol;
-  const uint16_t width = state.width;
-  const uint16_t rowSkip = state.rowSkip;
+                                 const uint32_t count, const uint32_t rowSkip_b,
+                                 uint32_t *pos_b, uint16_t *col_b,
+                                 const uint16_t width_b) {
+  uint32_t pos = *pos_b;
+  uint16_t col = *col_b;
 
   for (uint32_t i = 0; i < count; i++) {
     dst[i] = bgPixelTable[screenData[pos]];
     pos++;
-    if (++col == width) {
+    if (++col == width_b) {
       col = 0;
-      pos += rowSkip;
+      pos += rowSkip_b;
     }
   }
 
-  state.fillPos = pos;
-  state.fillCol = col;
+  (*pos_b) = pos;
+  (*col_b) = col;
 }
 
 // walks through RLE encoded image
@@ -301,7 +301,7 @@ HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
   HAL_Delay(120);
 
   // powering testing switches
-//  HAL_GPIO_WritePin(SWITCH_POWER_GPIO_Port, SWITCH_POWER_Pin, GPIO_PIN_SET);
+  //  HAL_GPIO_WritePin(SWITCH_POWER_GPIO_Port, SWITCH_POWER_Pin, GPIO_PIN_SET);
 
   // backlight on
   // starting display backlight pwm timer
@@ -411,7 +411,7 @@ HAL_StatusTypeDef ILI9488_LoadImage(SPI_HandleTypeDef *spi, uint16_t x_p,
     state.y = y_p;
     state.width = imgWidth_p;
     state.height = imgHeight_p;
-    state.imageSize = imgWidth_p * imgHeight_p;
+    state.objSize_p = imgWidth_p * imgHeight_p;
 
     state.currentlyLoading = false;
 
@@ -507,7 +507,7 @@ ILI9488_LoadText(SPI_HandleTypeDef *spi, uint16_t x_p, uint16_t y_p,
     state.y = y_p;
     state.width = boundsWidth_p;
     state.height = charHeight_p;
-    state.imageSize = boundsWidth_p * charHeight_p;
+    state.objSize_p = boundsWidth_p * charHeight_p;
 
     state.currentlyLoading = false;
 
@@ -542,11 +542,11 @@ HAL_StatusTypeDef ILI9488_Refresh(SPI_HandleTypeDef *spi) {
     ILI9488_Select();
 
     state.activeBuf = 0;
-    state.imageProgress = 0;
+    state.progress_eb = 0;
 
     // setting state to reuse the other callback
-    state.imageSize = ILI9488_WIDTH_PX * ILI9488_HEIGHT_PX;
-    state.imageTarget = state.imageSize / 2;
+    state.objSize_p = ILI9488_WIDTH_PX * ILI9488_HEIGHT_PX;
+    state.target_eb = state.objSize_p / 2;
     state.width = ILI9488_WIDTH_PX >> 3;
     state.height = ILI9488_HEIGHT_PX;
     state.x = 0;
@@ -558,12 +558,14 @@ HAL_StatusTypeDef ILI9488_Refresh(SPI_HandleTypeDef *spi) {
 
     state.activeBuf = 0;
     expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                  CHUNK >> 2);
+                  CHUNK >> 2, state.rowSkip, &state.fillPos, &state.fillCol,
+                  state.width);
 
-    state.imageProgress += CHUNK;
+    state.progress_eb += CHUNK;
     state.activeBuf = !state.activeBuf;
     expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                  CHUNK >> 2);
+                  CHUNK >> 2, state.rowSkip, &state.fillPos, &state.fillCol,
+                  state.width);
 
     HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[!state.activeBuf], CHUNK));
 
@@ -610,9 +612,9 @@ HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi) {
     // double buffering
 
     // sending image data. chunking data for DMA and memory saving purposes
-    state.imageProgress = 0;
+    state.progress_eb = 0;
 
-    state.imageTarget = state.imageSize / 2;
+    state.target_eb = state.objSize_p / 2;
 
     state.activeBuf = 0;
 
@@ -620,21 +622,24 @@ HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi) {
     state.fillCol = 0;
     state.rowSkip = ILI9488_WIDTH_BYTES - state.width;
 
-    if (state.imageTarget <= CHUNK) {
+    if (state.target_eb <= CHUNK) {
       expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                    state.imageTarget >> 2);
+                    state.target_eb >> 2, state.rowSkip, &state.fillPos,
+                    &state.fillCol, state.width);
       HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[state.activeBuf],
-                                   state.imageTarget));
-      state.imageProgress = state.imageTarget;
+                                   state.target_eb));
+      state.progress_eb = state.target_eb;
     } else {
       expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                    CHUNK >> 2);
-      state.imageProgress += CHUNK;
+                    CHUNK >> 2, state.rowSkip, &state.fillPos, &state.fillCol,
+                    state.width);
+      state.progress_eb += CHUNK;
       state.activeBuf = !state.activeBuf;
 
-      uint32_t remaining = state.imageTarget - state.imageProgress;
+      uint32_t remaining = state.target_eb - state.progress_eb;
       expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                    (remaining < CHUNK ? remaining : CHUNK) >> 2);
+                    (remaining < CHUNK ? remaining : CHUNK) >> 2, state.rowSkip,
+                    &state.fillPos, &state.fillCol, state.width);
       HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[!state.activeBuf], CHUNK));
     }
 
@@ -650,33 +655,34 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
   if (hspi->Instance == SPI1) {
 
     // done drawing condition
-    if (state.imageProgress >= state.imageTarget) {
+    if (state.progress_eb >= state.target_eb) {
       ILI9488_Deselect();
       state.currentlyDrawing = 0;
       return;
     }
 
     // partial chunk remaining
-    else if (state.imageTarget - state.imageProgress < CHUNK) {
+    else if (state.target_eb - state.progress_eb < CHUNK) {
       // can't do anything about error handling here?
       // maybe TODO find a way to re run the draw function if error occurs here
       HAL_SPI_Transmit_DMA(hspi, state.buf[state.activeBuf],
-                           state.imageTarget - state.imageProgress);
+                           state.target_eb - state.progress_eb);
       // set progress to finished
-      state.imageProgress += CHUNK;
+      state.progress_eb += CHUNK;
     }
 
     // full chunk remaining
     else {
       // incrementing image progress
-      state.imageProgress += CHUNK;
+      state.progress_eb += CHUNK;
       // transmitting loaded buffer
       HAL_SPI_Transmit_DMA(hspi, state.buf[state.activeBuf], CHUNK);
       // toggling active buffer
       state.activeBuf = !state.activeBuf;
 
       expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                    CHUNK >> 2);
+                    CHUNK >> 2, state.rowSkip, &state.fillPos, &state.fillCol,
+                    state.width);
     }
   }
 }

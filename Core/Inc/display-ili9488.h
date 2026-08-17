@@ -71,9 +71,11 @@ typedef struct {
   Image_t *backgroundImage;
 
   // --- Progress tracking, accessed together during transfer ---
-  volatile uint32_t imageProgress; // in pixels
-  uint32_t imageTarget;            // in bytes/pixel
-  uint32_t imageSize;              // in pixels
+  // progress and target cursors measured in expanded bytes
+  // 1 expanded byte holds 2 pixels
+  volatile uint32_t progress_eb; // in pixels
+  uint32_t target_eb;            // in bytes/pixel
+  uint32_t objSize_p;            // in pixels
 
   // large bit-packed buffer last: no alignment requirement, so it can
   // safely absorb any odd byte count without forcing padding after it

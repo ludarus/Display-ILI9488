@@ -164,7 +164,7 @@ int main(void) {
 
   // --- debugging --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-  ILI9488_SetRange(&hspi1, 0, 12, 0, 69);
+  // ILI9488_SetRange(&hspi1, 0, 12, 0, 69);
 
   // ILI9488_SetBackground(&File_072_ObjNum_135_480x320_6_18_26);
   //

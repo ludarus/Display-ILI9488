@@ -1,3 +1,10 @@
+# Building
+- Clone this repo
+- Install STM32CubeMX
+- Load project, then select [Display-ILI9488.ioc](Display-ILI9488.ioc)
+- Generate code (generates build files)
+- Load project onto MCU with debugger of choice
+
 # Functionality
 - Image and text displaying
     - Blit with OR mode or overwrite mode to either replace the current display section or draw on top of it
@@ -57,4 +64,27 @@ $ python BMP_parser.py <input file> <output directory> -f -cw <character width i
 - Use the [generate_lookup_table](scripts/generate_lookup_table.py) script to generate a lookup table from the specified on and off colours
 ```bash
 $ python generate_lookup.py <on colour in R B G> <off colour in R B G>
+```
+# Object table generation
+- Use the [modified_CreateTableFiles](scripts/modified_CreateTableFiles.py) script to generate the object table. All parameters are tweakable from within the file. 
+```bash
+$ python modified_CreateTableFiles.py
+```
+
+# Brightness table generation
+- Use the [generate_brightness_table](scripts/generate_brightness_table.py) script to generate a lookup brightness table. Gamma parameters can be tweaked from within the file.
+```bash
+$ python generate_brightness_table.py
+```
+
+# CAN Network emulation
+- Use the [TRC_parser](scripts/TRC_parser.py) script to emulate an inputted .trc log file. A USB to CAN adapter is required.
+```bash
+$ python TRC_parser.py <input .trc file>
+```
+
+# Stress testing
+- Use the [stress_test_generator](scripts/stress_test_generator.py) script to send test signals to the MCU. A USB to CAN adapter is required.
+```bash
+$ python stress_test_generator.py 
 ```

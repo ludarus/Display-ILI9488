@@ -186,37 +186,37 @@ int main(void) {
     if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
         objects[i].img->width != ILI9488_WIDTH_PX) {
       HAL_SPIN(ILI9488_BlitImage(&hspi1, objects[i].x, objects[i].y,
-                                 objects[i].img, objects[i].colour, true));
+                                 objects[i].img, objects[i].colour, false));
     }
   }
 
   HAL_Delay(1000);
 
-  (ILI9488_BlitText(&hspi1, 0, 5, "RED", 3, COLOR_RED, true));
+  (ILI9488_BlitText(&hspi1, 0, 5, "RED", 3, COLOR_RED, false));
 
   HAL_Delay(500);
 
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 1), "GREEN", 5, COLOR_GREEN, true));
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 1), "GREEN", 5, COLOR_GREEN, false));
 
   HAL_Delay(500);
 
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 2), "BLUE", 4, COLOR_BLUE, true));
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 2), "BLUE", 4, COLOR_BLUE, false));
 
   HAL_Delay(500);
 
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 3), "YELLOW", 6, COLOR_YELLOW, true));
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 3), "YELLOW", 6, COLOR_YELLOW, false));
 
   HAL_Delay(500);
 
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 4), "CYAN", 4, COLOR_CYAN, true));
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 4), "CYAN", 4, COLOR_CYAN, false));
 
   HAL_Delay(500);
 
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 5), "PURPLE", 6, COLOR_PURPLE, true));
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 5), "PURPLE", 6, COLOR_PURPLE, false));
 
   HAL_Delay(500);
 
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), "WHITE", 5, COLOR_WHITE, true));
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), "WHITE", 5, COLOR_WHITE, false));
 
   HAL_Delay(500);
   // //

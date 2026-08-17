@@ -94,7 +94,7 @@ def send_messages(messages: list[CAN_message]) -> None:
     for msgIdx in range(1, len(messages)):
 
         # waiting the specified delay. will have some small time drift but its fine for this application
-        time.sleep((messages[msgIdx].time - messages[msgIdx - 1].time) / 900.0)
+        time.sleep((messages[msgIdx].time - messages[msgIdx - 1].time) / 1000.0)
 
         print(
             f"sending msg with id = {hex(messages[msgIdx].id)}, data = {messages[msgIdx].data}"

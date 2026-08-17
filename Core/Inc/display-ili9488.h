@@ -98,4 +98,9 @@ ILI9488_LoadText(SPI_HandleTypeDef *spi, uint16_t x_p, uint16_t y_p,
                  bool overWrite, bool bg, bool draw);
 HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi);
 
+// debugging
+HAL_StatusTypeDef ILI9488_SetRange(SPI_HandleTypeDef *spi, uint16_t colStart,
+                                   uint16_t colEnd, uint16_t rowStart,
+                                   uint16_t rowEnd);
+
 #endif /* INC_DISPLAY_ILI9488_H_ */

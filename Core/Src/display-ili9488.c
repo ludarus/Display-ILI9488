@@ -41,7 +41,7 @@ static inline void expandToChunk(uint8_t *screenData, uint32_t *dst,
   const uint16_t rowSkip = state.rowSkip;
 
   for (uint32_t i = 0; i < count; i++) {
-    dst[i] = pixelTable[screenData[pos]];
+    dst[i] = bgPixelTable[screenData[pos]];
     pos++;
     if (++col == width) {
       col = 0;

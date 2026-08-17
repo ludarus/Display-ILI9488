@@ -588,7 +588,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
         uart, (uint8_t *)"TIMEOUT: no command received in the last 4000ms\n",
         48);
 
-    ILI9488_LoadImage(spi, 0, 0, &SYSFAIL_480x320, true, false, true);
+    // ILI9488_LoadImage(spi, 0, 0, &SYSFAIL_480x320, true, false, true);
 
     lastMsgTick = 0;
   }

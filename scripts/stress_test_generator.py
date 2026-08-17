@@ -356,11 +356,11 @@ messages = combine_generators(
     [  # List of generators. Probably make some of the intervals prime
         # MsgGenerator(1, 16000),
         # BackgroundGenerator(1013, 25),
-        ImageGenerator(30, 1000),
+        ImageGenerator(20, 1000),
         # AlarmGenerator(50, 500),
         # BrightnessGenerator(30, 50),
         # FailureGenerator(1000, 5),
-        # TextGenerator(12, 1000),
+        TextGenerator(11, 1000),
         # VersionGenerator(10, 1000),
     ]
 )

@@ -201,7 +201,7 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
     // displaying
     // HAL_StatusTypeDef displayStatus =
     HAL_SPIN(ILI9488_BlitText(spi, objects[objNum - 1].x, objects[objNum - 1].y,
-                              charArray, target, objects[objNum - 1].colour));
+                              charArray, target, objects[objNum - 1].colour, false));
 
     // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
     //                        "Disp text: \"%.*s\", objNum = %u\n", target,
@@ -249,7 +249,8 @@ HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
   }
 
   // display according image
-  HAL_SPIN(ILI9488_BlitImage(spi, obj->x, obj->y, obj->img, obj->colour));
+  HAL_SPIN(
+      ILI9488_BlitImage(spi, obj->x, obj->y, obj->img, obj->colour, false));
 
   // diagnostic logging
   // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
@@ -331,9 +332,8 @@ HAL_StatusTypeDef CMD_SysFail(CanRxMessage_t *msg) {
   HAL_UART_Transmit_IT(uart, (uint8_t *)"ERROR: SYSTEM FAILURE RECEIVED \n",
                        32);
 
-  ILI9488_BlitImage(spi, 0, 0, &SYSFAIL_480x320, COLOR_RED);
+  ILI9488_BlitImage(spi, 0, 0, &SYSFAIL_480x320, COLOR_RED, true);
   return HAL_OK;
-  // return ILI9488_LoadImage(spi, 0, 0, &SYSFAIL_480x320, true, false, true);
 }
 
 HAL_StatusTypeDef CMD_Brightness(CanRxMessage_t *msg) {
@@ -585,7 +585,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
         uart, (uint8_t *)"TIMEOUT: no command received in the last 4000ms\n",
         48);
 
-    // HAL_SPIN(ILI9488_BlitImage(spi, 0, 0, &SYSFAIL_480x320, COLOR_RED));
+    HAL_SPIN(ILI9488_BlitImage(spi, 0, 0, &SYSFAIL_480x320, COLOR_RED, false));
 
     lastMsgTick = 0;
   }

@@ -171,67 +171,65 @@ int main(void) {
   //   ILI9488_SetRange(&hspi1, 30 + i * 2, 40 + i * 2, 0 + i * 2, 12 + i * 2);
   // }
 
-  ILI9488_SetRange(&hspi1, 12, 21, 3, 6);
+  ILI9488_SetRange(&hspi1, 10, 20, 10, 20);
 
-  // DEBUG_sendpixels(&hspi1, 0b11101110, 1000);
-
-  // for (uint16_t i = 0; i < 149; i++) {
-  //   if (objects[i].type == BACKGROUND_OBJ_TYPE) {
-  //     HAL_SPIN(ILI9488_SetBackground(&hspi1, objects[i].img));
-  //   }
-  // }
+  for (uint16_t i = 0; i < 149; i++) {
+    if (objects[i].type == BACKGROUND_OBJ_TYPE) {
+      HAL_SPIN(ILI9488_SetBackground(&hspi1, objects[i].img));
+    }
+  }
   //
   ILI9488_SetBackground(&hspi1, &File_072_ObjNum_135_480x320_6_18_26);
   //
   // loading all smaller images to test placement
-  // for (int i = 0; i < 149; i++) {
-  //   if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
-  //       objects[i].img->width != ILI9488_WIDTH_PX) {
-  //     HAL_SPIN(ILI9488_BlitImage(&hspi1, objects[i].x, objects[i].y,
-  //                                objects[i].img, objects[i].colour));
-  // HAL_Delay(100);
-  //   }
-  // }
-  //
+  for (int i = 0; i < 149; i++) {
+    if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
+        objects[i].img->width != ILI9488_WIDTH_PX) {
+      HAL_SPIN(ILI9488_BlitImage(&hspi1, objects[i].x, objects[i].y,
+                                 objects[i].img, objects[i].colour, true));
+    }
+  }
+
   HAL_Delay(1000);
 
-  (ILI9488_BlitText(&hspi1, 0, 5, "RED", 3, COLOR_RED));
+  (ILI9488_BlitText(&hspi1, 0, 5, "RED", 3, COLOR_RED, true));
 
   HAL_Delay(500);
 
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 1), "GREEN", 5, COLOR_GREEN));
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 1), "GREEN", 5, COLOR_GREEN, true));
 
   HAL_Delay(500);
 
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 2), "BLUE", 4, COLOR_BLUE));
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 2), "BLUE", 4, COLOR_BLUE, true));
 
   HAL_Delay(500);
 
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 3), "YELLOW", 6, COLOR_YELLOW));
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 3), "YELLOW", 6, COLOR_YELLOW, true));
 
   HAL_Delay(500);
 
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 4), "CYAN", 4, COLOR_CYAN));
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 4), "CYAN", 4, COLOR_CYAN, true));
 
   HAL_Delay(500);
 
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 5), "PURPLE", 6, COLOR_PURPLE));
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 5), "PURPLE", 6, COLOR_PURPLE, true));
 
   HAL_Delay(500);
 
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), "WHITE", 5, COLOR_WHITE));
-  //
-  //
-  //
-  // // loading all text to test placement
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), "WHITE", 5, COLOR_WHITE, true));
+
+  HAL_Delay(500);
+  // //
+  // // // loading all text to test placement
   // for (int i = 0; i < 149; i++) {
   //   if (objects[i].type == TEXT_OBJ_TYPE) {
   //     HAL_SPIN(ILI9488_BlitText(
-  //         &hspi1, objects[i].x, objects[i].y, "HHHHHHHHHHHHHHH",
-  //         (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH,
-  //          objects[i].colour));
+  //         &hspi1, objects[i].x, objects[i].y, "123456789012345",
+  //         (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH, objects[i].colour));
   //   }
   // }
+  //
+  // HAL_Delay(1000);
   //
   /* USER CODE END 2 */
 

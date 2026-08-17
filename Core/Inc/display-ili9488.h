@@ -42,13 +42,13 @@
 
 // colour enums
 #define COLOR_BLACK (uint8_t)0b00000000
-#define COLOR_WHITE (uint8_t)0b11101110
-#define COLOR_BLUE (uint8_t)0b10001000
-#define COLOR_RED (uint8_t)0b01000100
-#define COLOR_GREEN (uint8_t)0b00100010
-#define COLOR_PURPLE (uint8_t)0b11001100
-#define COLOR_CYAN (uint8_t)0b10101010
-#define COLOR_YELLOW (uint8_t)0b01100110
+#define COLOR_WHITE (uint8_t)0b00111111
+#define COLOR_RED (uint8_t)0b00100100
+#define COLOR_GREEN (uint8_t)0b00010010
+#define COLOR_BLUE (uint8_t)0b00001001
+#define COLOR_PURPLE (uint8_t)0b00101101
+#define COLOR_CYAN (uint8_t)0b00011011
+#define COLOR_YELLOW (uint8_t)0b00110110
 
 // macros to set bits in a bit packed array. Only used for debugging functions
 // sets pixel/bit to 1
@@ -127,5 +127,7 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
 HAL_StatusTypeDef ILI9488_SetRange(SPI_HandleTypeDef *spi, uint16_t colStart,
                                    uint16_t colEnd, uint16_t rowStart,
                                    uint16_t rowEnd);
+// debugging function
+void DEBUG_sendpixels(SPI_HandleTypeDef *spi, uint8_t pixel, uint32_t count);
 
 #endif /* INC_DISPLAY_ILI9488_H_ */

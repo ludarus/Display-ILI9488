@@ -171,23 +171,28 @@ int main(void) {
   //   ILI9488_SetRange(&hspi1, 30 + i * 2, 40 + i * 2, 0 + i * 2, 12 + i * 2);
   // }
 
-  for (uint16_t i = 0; i < 149; i++) {
-    if (objects[i].type == BACKGROUND_OBJ_TYPE) {
-      HAL_SPIN(ILI9488_SetBackground(&hspi1, objects[i].img));
-    }
-  }
+  ILI9488_SetRange(&hspi1, 12, 21, 3, 6);
 
+  // DEBUG_sendpixels(&hspi1, 0b11101110, 1000);
+
+  // for (uint16_t i = 0; i < 149; i++) {
+  //   if (objects[i].type == BACKGROUND_OBJ_TYPE) {
+  //     HAL_SPIN(ILI9488_SetBackground(&hspi1, objects[i].img));
+  //   }
+  // }
+  //
   ILI9488_SetBackground(&hspi1, &File_072_ObjNum_135_480x320_6_18_26);
-
+  //
   // loading all smaller images to test placement
-  for (int i = 0; i < 149; i++) {
-    if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
-        objects[i].img->width != ILI9488_WIDTH_PX) {
-      HAL_SPIN(ILI9488_BlitImage(&hspi1, objects[i].x, objects[i].y,
-                                 objects[i].img, objects[i].colour));
-    }
-  }
-
+  // for (int i = 0; i < 149; i++) {
+  //   if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
+  //       objects[i].img->width != ILI9488_WIDTH_PX) {
+  //     HAL_SPIN(ILI9488_BlitImage(&hspi1, objects[i].x, objects[i].y,
+  //                                objects[i].img, objects[i].colour));
+  // HAL_Delay(100);
+  //   }
+  // }
+  //
   HAL_Delay(1000);
 
   (ILI9488_BlitText(&hspi1, 0, 5, "RED", 3, COLOR_RED));

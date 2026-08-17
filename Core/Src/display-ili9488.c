@@ -300,10 +300,28 @@ HAL_StatusTypeDef ILI9488_Data(SPI_HandleTypeDef *spi, uint8_t *data,
   return status;
 }
 
+// debugging function
+void DEBUG_sendpixels(SPI_HandleTypeDef *spi, uint8_t pixel, uint32_t count) {
+
+  ILI9488_Cmd(spi, 0x2C);
+
+  // setting to data mode
+  HAL_GPIO_WritePin(DISPLAY_DC_GPIO_Port, DISPLAY_DC_Pin, GPIO_PIN_SET);
+
+  ILI9488_Select();
+
+  for (uint32_t i = 0; i < count; i++) {
+    HAL_SPI_Transmit(spi, &pixel, 1, HAL_MAX_DELAY);
+  }
+
+  ILI9488_Deselect();
+}
+
 // utility function to set the writing range of the controller
 HAL_StatusTypeDef ILI9488_SetRange(SPI_HandleTypeDef *spi, uint16_t colStart,
                                    uint16_t colEnd, uint16_t rowStart,
                                    uint16_t rowEnd) {
+
   // set column address command
   HAL_TRY(ILI9488_Cmd(spi, 0x2A));
 
@@ -508,7 +526,7 @@ HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
   HAL_TRY(ILI9488_Cmd(spi, 0x3A));
   // Lowest available is 3bit/pixel
   // 00000001
-  // format: R G B 0 R G B 0
+  // format: 0 0 R G B R G B
   // each byte = two pixels due to padding
   uint8_t colmod = 0x01;
   HAL_TRY(ILI9488_Data(spi, &colmod, 1));
@@ -523,6 +541,9 @@ HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
   // enabling display inversion for IPS display
   HAL_TRY(ILI9488_Cmd(spi, 0x21));
   // no data
+
+  // enabling partial mode
+  HAL_TRY(ILI9488_Cmd(spi, 0x12));
 
   // display on
   HAL_TRY(ILI9488_Cmd(spi, 0x29));

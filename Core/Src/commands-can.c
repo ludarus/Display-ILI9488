@@ -9,7 +9,7 @@
 #include "File_005_ObjNum_004_480x320_6_18_26.h"
 #include "SYSFAIL_480x320.h"
 #include "alarm.h"
-#include "display-ili9488.h"
+#include "display-ili9488-mono.h"
 #include "font.h"
 #include "main.h"
 #include "stm32f091xc.h"

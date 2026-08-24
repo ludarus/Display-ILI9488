@@ -370,7 +370,7 @@ def convertToNewScreen(objList: list[Object]) -> list[Object]:
                 obj.yLocation *= SCALING_HEIGHT
 
                 # chopped off pixels from the font bitmap
-                obj.yLocation += 5
+                obj.yLocation += 4
 
                 obj.xLocation = int(obj.xLocation)
                 # tuple

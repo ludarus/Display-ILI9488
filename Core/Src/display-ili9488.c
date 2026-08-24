@@ -539,7 +539,7 @@ HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
   // 00000001
   // format: 0 0 R G B R G B
   // each byte = two pixels due to padding
-  uint8_t colmod = 0x01;
+  uint8_t colmod = 0b01000000;
   HAL_TRY(ILI9488_Data(spi, &colmod, 1));
 
   // Column inversion for display longevity

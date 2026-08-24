@@ -219,17 +219,18 @@ int main(void) {
   (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), "WHITE", 5, COLOR_WHITE, false));
 
   HAL_Delay(500);
-  // //
-  // // // loading all text to test placement
-  // for (int i = 0; i < 149; i++) {
-  //   if (objects[i].type == TEXT_OBJ_TYPE) {
-  //     HAL_SPIN(ILI9488_BlitText(
-  //         &hspi1, objects[i].x, objects[i].y, "123456789012345",
-  //         (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH, objects[i].colour));
-  //   }
-  // }
   //
-  // HAL_Delay(1000);
+  // // loading all text to test placement
+  for (int i = 0; i < 149; i++) {
+    if (objects[i].type == TEXT_OBJ_TYPE) {
+      HAL_SPIN(ILI9488_BlitText(&hspi1, objects[i].x, objects[i].y,
+                                "123456789012345",
+                                (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH,
+                                objects[i].colour, true));
+    }
+  }
+
+  HAL_Delay(1000);
   //
   /* USER CODE END 2 */
 

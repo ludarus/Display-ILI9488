@@ -164,55 +164,55 @@ int main(void) {
 
   // --- debugging --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-  // ILI9488_SetRange(&hspi1, 0, 12, 0, 69);
+  ILI9488_SetRange(&hspi1, 0, 12, 0, 69);
 
-  // ILI9488_SetBackground(&File_072_ObjNum_135_480x320_6_18_26);
-  //
-  // HAL_SPIN(ILI9488_LoadImage(&hspi1, 0, 0, &File_072_ObjNum_135_480x320_6_18_26,
-  //                            true, false, true));
-  // HAL_Delay(1000);
-  //
-  // HAL_SPIN(ILI9488_LoadImage(
-  //     &hspi1, 64, 69, &File_069_ObjNum_124_64x103_6_19_26, false, true, true));
+  ILI9488_SetBackground(&File_072_ObjNum_135_480x320_6_18_26);
+
+  HAL_SPIN(ILI9488_LoadImage(&hspi1, 0, 0, &File_072_ObjNum_135_480x320_6_18_26,
+                             true, false, true));
+  HAL_Delay(1000);
+
+  HAL_SPIN(ILI9488_LoadImage(
+      &hspi1, 64, 69, &File_069_ObjNum_124_64x103_6_19_26, false, true, true));
 
   // loading all smaller images to test placement
-  // for (int i = 0; i < 149; i++) {
-  //   if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
-  //       objects[i].img->width != ILI9488_WIDTH_PX) {
-  //     if (ILI9488_LoadImage(&hspi1, objects[i].x, objects[i].y,
-  //     objects[i].img,
-  //                           true, false, true) != HAL_OK) {
-  //       ILI9488_LoadText(&hspi1, 0, 0, (uint8_t *)"ERROR", 6, font, FONTSIZE,
-  //                        CHARWIDTH, CHARHEIGHT, true, false, true);
-  //     }
-  //
-  //     HAL_Delay(30);
-  //   }
-  // }
-  //
-  // HAL_Delay(30);
-  //
-  // // loading all text to test placement
-  // for (int i = 0; i < 149; i++) {
-  //   if (objects[i].type == TEXT_OBJ_TYPE) {
-  //     ILI9488_LoadImage(&hspi1, objects[i].x, objects[i].y, objects[i].img,
-  //                       true, false, true);
-  //
-  //     ILI9488_LoadText(&hspi1, objects[i].x, objects[i].y, "HHHHHHHHHHHHHHH",
-  //                      (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH, font,
-  //                      FONTSIZE, CHARWIDTH, CHARHEIGHT, true, false, true);
-  //
-  //     HAL_Delay(20);
-  //   }
-  // }
-  //
-  // HAL_Delay(100);
-  //
-  // ILI9488_SetBackground(objects[136].img);
-  //
-  // ILI9488_LoadText(&hspi1, objects[145].x, objects[145].y, "Test", 4, font,
-  //                  FONTSIZE, CHARWIDTH, CHARHEIGHT, true, true, true);
-  //
+  for (int i = 0; i < 149; i++) {
+    if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
+        objects[i].img->width != ILI9488_WIDTH_PX) {
+      if (ILI9488_LoadImage(&hspi1, objects[i].x, objects[i].y,
+      objects[i].img,
+                            true, false, true) != HAL_OK) {
+        ILI9488_LoadText(&hspi1, 0, 0, (uint8_t *)"ERROR", 6, font, FONTSIZE,
+                         CHARWIDTH, CHARHEIGHT, true, false, true);
+      }
+
+      HAL_Delay(30);
+    }
+  }
+
+  HAL_Delay(30);
+
+  // loading all text to test placement
+  for (int i = 0; i < 149; i++) {
+    if (objects[i].type == TEXT_OBJ_TYPE) {
+      ILI9488_LoadImage(&hspi1, objects[i].x, objects[i].y, objects[i].img,
+                        true, false, true);
+
+      ILI9488_LoadText(&hspi1, objects[i].x, objects[i].y, "HHHHHHHHHHHHHHH",
+                       (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH, font,
+                       FONTSIZE, CHARWIDTH, CHARHEIGHT, true, false, true);
+
+      HAL_Delay(20);
+    }
+  }
+
+  HAL_Delay(100);
+
+  ILI9488_SetBackground(objects[136].img);
+
+  ILI9488_LoadText(&hspi1, objects[145].x, objects[145].y, "Test", 4, font,
+                   FONTSIZE, CHARWIDTH, CHARHEIGHT, true, true, true);
+
   // displaying images to test boundaries
 
   // ILI9488_Draw(&hspi1);

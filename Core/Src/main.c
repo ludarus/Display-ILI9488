@@ -25,10 +25,13 @@
 #include "File_006_ObjNum_005_480x320_6_18_26_C.h"
 #include "File_069_ObjNum_124_64x103_6_19_26.h"
 #include "File_072_ObjNum_135_480x320_6_18_26.h"
+#include "File_073_ObjNum_136_480x320_6_18_26.h"
+#include "File_077_ObjNum_147_480x320_6_18_26.h"
+#include "File_079_ObjNum_149_480x320_6_17_26.h"
 #include "SYSFAIL_480x320.h"
 #include "alarm.h"
 #include "commands-can.h"
-#include "display-ili9488-mono.h"
+#include "display-ili9488-colour.h"
 #include "font.h"
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_tim.h"
@@ -164,61 +167,71 @@ int main(void) {
 
   // --- debugging --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-  ILI9488_SetRange(&hspi1, 0, 12, 0, 69);
+  // for (uint8_t i = 0; i < 69; i++) {
+  //   ILI9488_SetRange(&hspi1, 30 + i * 2, 40 + i * 2, 0 + i * 2, 12 + i * 2);
+  // }
 
-  ILI9488_SetBackground(&File_072_ObjNum_135_480x320_6_18_26);
+  ILI9488_SetRange(&hspi1, 10, 20, 10, 20);
 
-  HAL_SPIN(ILI9488_LoadImage(&hspi1, 0, 0, &File_072_ObjNum_135_480x320_6_18_26,
-                             true, false, true));
-  HAL_Delay(1000);
-
-  HAL_SPIN(ILI9488_LoadImage(
-      &hspi1, 64, 69, &File_069_ObjNum_124_64x103_6_19_26, false, true, true));
-
+  for (uint16_t i = 0; i < 149; i++) {
+    if (objects[i].type == BACKGROUND_OBJ_TYPE) {
+      HAL_SPIN(ILI9488_SetBackground(&hspi1, objects[i].img));
+    }
+  }
+  //
+  ILI9488_SetBackground(&hspi1, &File_072_ObjNum_135_480x320_6_18_26);
+  //
   // loading all smaller images to test placement
   for (int i = 0; i < 149; i++) {
     if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
         objects[i].img->width != ILI9488_WIDTH_PX) {
-      if (ILI9488_LoadImage(&hspi1, objects[i].x, objects[i].y,
-      objects[i].img,
-                            true, false, true) != HAL_OK) {
-        ILI9488_LoadText(&hspi1, 0, 0, (uint8_t *)"ERROR", 6, font, FONTSIZE,
-                         CHARWIDTH, CHARHEIGHT, true, false, true);
-      }
-
-      HAL_Delay(30);
+      HAL_SPIN(ILI9488_BlitImage(&hspi1, objects[i].x, objects[i].y,
+                                 objects[i].img, objects[i].colour, false));
     }
   }
 
-  HAL_Delay(30);
+  HAL_Delay(1000);
 
-  // loading all text to test placement
+  (ILI9488_BlitText(&hspi1, 0, 5, "RED", 3, COLOR_RED, false));
+
+  HAL_Delay(500);
+
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 1), "GREEN", 5, COLOR_GREEN, false));
+
+  HAL_Delay(500);
+
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 2), "BLUE", 4, COLOR_BLUE, false));
+
+  HAL_Delay(500);
+
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 3), "YELLOW", 6, COLOR_YELLOW, false));
+
+  HAL_Delay(500);
+
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 4), "CYAN", 4, COLOR_CYAN, false));
+
+  HAL_Delay(500);
+
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 5), "PURPLE", 6, COLOR_PURPLE, false));
+
+  HAL_Delay(500);
+
+  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), "WHITE", 5, COLOR_WHITE, false));
+
+  HAL_Delay(500);
+  //
+  // // loading all text to test placement
   for (int i = 0; i < 149; i++) {
     if (objects[i].type == TEXT_OBJ_TYPE) {
-      ILI9488_LoadImage(&hspi1, objects[i].x, objects[i].y, objects[i].img,
-                        true, false, true);
-
-      ILI9488_LoadText(&hspi1, objects[i].x, objects[i].y, "HHHHHHHHHHHHHHH",
-                       (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH, font,
-                       FONTSIZE, CHARWIDTH, CHARHEIGHT, true, false, true);
-
-      HAL_Delay(20);
+      HAL_SPIN(ILI9488_BlitText(&hspi1, objects[i].x, objects[i].y,
+                                "123456789012345",
+                                (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH,
+                                objects[i].colour, true));
     }
   }
 
-  HAL_Delay(100);
-
-  ILI9488_SetBackground(objects[136].img);
-
-  ILI9488_LoadText(&hspi1, objects[145].x, objects[145].y, "Test", 4, font,
-                   FONTSIZE, CHARWIDTH, CHARHEIGHT, true, true, true);
-
-  // displaying images to test boundaries
-
-  ILI9488_Draw(&hspi1);
-
-  HAL_SPIN(ILI9488_Refresh(&hspi1));
-
+  HAL_Delay(1000);
+  //
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -338,7 +351,7 @@ static void MX_SPI1_Init(void) {
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
   hspi1.Init.CRCPolynomial = 7;
   hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-  hspi1.Init.NSSPMode = SPI_NSS_PULSE_ENABLE;
+  hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
   if (HAL_SPI_Init(&hspi1) != HAL_OK) {
     Error_Handler();
   }

@@ -46,6 +46,7 @@ typedef struct {
   uint8_t type;
   uint16_t x;
   uint16_t y;
+  uint8_t colour;
   const Image_t *img;
 } Obj_t;
 

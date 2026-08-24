@@ -73,7 +73,7 @@ LoopCopyDataInit:
   
 /* Zero fill the bss segment. */
   ldr r2, =_sbss
-  ldr r4, =_ebss
+  ldr   r4, =_ebss
   movs r3, #0
   b LoopFillZerobss
 

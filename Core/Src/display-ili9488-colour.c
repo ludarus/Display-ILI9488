@@ -23,7 +23,7 @@
 #include "stm32f0xx_hal_spi.h"
 #include "stm32f0xx_hal_tim.h"
 #include "tables.h"
-#include <display-ili9488.h>
+#include <display-ili9488-colour.h>
 #include <stdbool.h>
 #include <stdint.h>
 

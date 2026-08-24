@@ -31,7 +31,7 @@
 #include "SYSFAIL_480x320.h"
 #include "alarm.h"
 #include "commands-can.h"
-#include "display-ili9488.h"
+#include "display-ili9488-colour.h"
 #include "font.h"
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_tim.h"

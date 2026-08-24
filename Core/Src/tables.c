@@ -82,7 +82,7 @@
 #include "File_078_ObjNum_148_480x320_6_18_26.h"
 #include "File_079_ObjNum_149_480x320_6_17_26.h"
 #include "commands-can.h"
-#include "display-ili9488.h"
+#include "display-ili9488-colour.h"
 
 const Obj_t objects[] = {
     {1, BACKGROUND_OBJ_TYPE, 0, 0, COLOR_YELLOW,

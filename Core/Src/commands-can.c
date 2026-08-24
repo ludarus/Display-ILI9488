@@ -201,7 +201,8 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
     // displaying
     // HAL_StatusTypeDef displayStatus =
     HAL_SPIN(ILI9488_BlitText(spi, objects[objNum - 1].x, objects[objNum - 1].y,
-                              charArray, target, objects[objNum - 1].colour, true));
+                              charArray, target, objects[objNum - 1].colour,
+                              true));
 
     // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
     //                        "Disp text: \"%.*s\", objNum = %u\n", target,

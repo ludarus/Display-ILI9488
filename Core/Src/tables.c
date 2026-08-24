@@ -514,7 +514,6 @@ const Obj_t objects[] = {
     {149, BACKGROUND_OBJ_TYPE, 0, 0, COLOR_YELLOW,
      &File_079_ObjNum_149_480x320_6_17_26},
 };
-
 // lookup table for possible 4 byte packages
 // output of .generate_lookup_table.py
 

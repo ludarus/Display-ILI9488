@@ -215,9 +215,9 @@ int main(void) {
 
   // displaying images to test boundaries
 
-  // ILI9488_Draw(&hspi1);
+  ILI9488_Draw(&hspi1);
 
-  // HAL_SPIN(ILI9488_Refresh(&hspi1));
+  HAL_SPIN(ILI9488_Refresh(&hspi1));
 
   /* USER CODE END 2 */
 

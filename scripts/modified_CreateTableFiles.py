@@ -362,6 +362,9 @@ def convertToNewScreen(objList: list[Object]) -> list[Object]:
                 # Text seems to be slightly out of bounds on y, so scaling this back a little bit
                 obj.yLocation *= SCALING_HEIGHT
 
+                # chopped off pixels from the font bitmap
+                obj.yLocation += 4
+
                 obj.xLocation = int(obj.xLocation)
                 # tuple
                 textIds.append((obj.objNum, obj.xLocation))
@@ -393,7 +396,7 @@ def generateArray(modifiedObjlist: list[Object]) -> list[str]:
     modifiedObjlist.pop(0)
 
     # generates a c array from the modified objlist
-    lines: list[str] = ["static const Obj_t objects[] = {"]
+    lines: list[str] = ["const Obj_t objects[] = {"]
 
     for object in modifiedObjlist:
         lines.append(

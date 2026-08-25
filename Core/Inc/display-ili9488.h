@@ -65,7 +65,7 @@ HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
 // chunk is in expanded bytes, 2px = 1eb
 // struct to store the current state of object rendering,
 typedef struct {
-  // state variables
+  // drawing state
   volatile uint8_t drawStatus;
   // buffer toggle
   volatile uint8_t activeBuf;
@@ -128,9 +128,9 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
 // as drawing happens between functions and callbacks so shared state is needed
 // Reordered for optimal cache utilization and memory efficiency by claude
 typedef struct {
-  // state variables
-  volatile bool currentlyDrawing;
-  volatile bool currentlyLoading;
+  // drawing state
+  volatile uint8_t drawStatus;
+
   // buffer toggle
   volatile uint8_t activeBuf;
 

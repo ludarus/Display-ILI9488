@@ -263,7 +263,6 @@ static inline void expandToChunk(uint8_t *screenData, uint32_t *dst,
   (*col_b) = col;
 }
 
-
 static inline void bgPreload(const uint8_t *bgData, uint8_t *screenData,
                              uint32_t pos_p, const uint16_t width_p,
                              const uint16_t height_p) {
@@ -283,7 +282,7 @@ static inline void bgPreload(const uint8_t *bgData, uint8_t *screenData,
       uint16_t chunk = (remainingPx > bgRem_p) ? bgRem_p : remainingPx;
       remainingPx -= chunk;
 
-		fillBitpacked(screenData, &pos_p, chunk, bgIdx % 2, true);
+      fillBitpacked(screenData, &pos_p, chunk, bgIdx % 2, true);
 
       rleAdvance(bgData, &bgRem_p, &bgIdx, chunk);
     }
@@ -476,75 +475,66 @@ HAL_StatusTypeDef ILI9488_BlitBackground(SPI_HandleTypeDef *spi) {
 // x and y should be multiples of 8
 // draws last loaded image to screen
 HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi) {
-  if (!state.currentlyDrawing) {
+  // setting fill range to only include the last written screen update
+  HAL_TRY(ILI9488_SetRange(spi, state.x, state.x + state.width - 1, state.y,
+                           state.y + state.height - 1));
 
-    // setting status to busy
-    state.currentlyDrawing = true;
-
-    // setting fill range to only include the last written screen update
-    HAL_TRY(ILI9488_SetRange(spi, state.x, state.x + state.width - 1, state.y,
-                             state.y + state.height - 1));
-
-    // conditions should not ever trigger, but still here just in case
-    if (state.x + state.width > ILI9488_WIDTH_PX) {
-      state.width = ILI9488_WIDTH_PX - state.x;
-    }
-
-    if (state.y + state.height > ILI9488_HEIGHT_PX) {
-      state.height = ILI9488_HEIGHT_PX - state.y;
-    }
-
-    // converting pixels to bytes
-    state.x /= 8;
-    state.width /= 8;
-
-    // write data command
-    HAL_TRY(ILI9488_Cmd(spi, 0x2C));
-
-    // setting to data mode
-    HAL_GPIO_WritePin(DISPLAY_DC_GPIO_Port, DISPLAY_DC_Pin, GPIO_PIN_SET);
-
-    // selecting spi device
-    ILI9488_Select();
-
-    // double buffering
-
-    // sending image data. chunking data for DMA and memory saving purposes
-    state.progress_eb = 0;
-
-    state.target_eb = state.objSize_p / 2;
-
-    state.activeBuf = 0;
-
-    state.fillPos = (uint32_t)ILI9488_WIDTH_BYTES * state.y + state.x;
-    state.fillCol = 0;
-    state.rowSkip = ILI9488_WIDTH_BYTES - state.width;
-
-    if (state.target_eb <= CHUNK) {
-      expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                    state.target_eb >> 2, state.rowSkip, &state.fillPos,
-                    &state.fillCol, state.width);
-      HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[state.activeBuf],
-                                   state.target_eb));
-      state.progress_eb = state.target_eb;
-    } else {
-      expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                    CHUNK >> 2, state.rowSkip, &state.fillPos, &state.fillCol,
-                    state.width);
-      state.progress_eb += CHUNK;
-      state.activeBuf = !state.activeBuf;
-
-      uint32_t remaining = state.target_eb - state.progress_eb;
-      expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                    (remaining < CHUNK ? remaining : CHUNK) >> 2, state.rowSkip,
-                    &state.fillPos, &state.fillCol, state.width);
-      HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[!state.activeBuf], CHUNK));
-    }
-
-    return HAL_OK;
-  } else {
-    return HAL_BUSY;
+  // conditions should not ever trigger, but still here just in case
+  if (state.x + state.width > ILI9488_WIDTH_PX) {
+    state.width = ILI9488_WIDTH_PX - state.x;
   }
+
+  if (state.y + state.height > ILI9488_HEIGHT_PX) {
+    state.height = ILI9488_HEIGHT_PX - state.y;
+  }
+
+  // converting pixels to bytes
+  state.x /= 8;
+  state.width /= 8;
+
+  // write data command
+  HAL_TRY(ILI9488_Cmd(spi, 0x2C));
+
+  // setting to data mode
+  HAL_GPIO_WritePin(DISPLAY_DC_GPIO_Port, DISPLAY_DC_Pin, GPIO_PIN_SET);
+
+  // selecting spi device
+  ILI9488_Select();
+
+  // double buffering
+
+  // sending image data. chunking data for DMA and memory saving purposes
+  state.progress_eb = 0;
+
+  state.target_eb = state.objSize_p / 2;
+
+  state.activeBuf = 0;
+
+  state.fillPos = (uint32_t)ILI9488_WIDTH_BYTES * state.y + state.x;
+  state.fillCol = 0;
+  state.rowSkip = ILI9488_WIDTH_BYTES - state.width;
+
+  if (state.target_eb <= CHUNK) {
+    expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
+                  state.target_eb >> 2, state.rowSkip, &state.fillPos,
+                  &state.fillCol, state.width);
+    HAL_TRY(
+        HAL_SPI_Transmit_DMA(spi, state.buf[state.activeBuf], state.target_eb));
+    state.progress_eb = state.target_eb;
+  } else {
+    expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
+                  CHUNK >> 2, state.rowSkip, &state.fillPos, &state.fillCol,
+                  state.width);
+    state.progress_eb += CHUNK;
+    state.activeBuf = !state.activeBuf;
+
+    uint32_t remaining = state.target_eb - state.progress_eb;
+    expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
+                  (remaining < CHUNK ? remaining : CHUNK) >> 2, state.rowSkip,
+                  &state.fillPos, &state.fillCol, state.width);
+    HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[!state.activeBuf], CHUNK));
+  }
+  return HAL_OK;
 }
 #endif
 
@@ -782,14 +772,14 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
 HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
                                     uint16_t y_p, const Image_t *image,
                                     bool overWrite) {
-  if (!state.currentlyLoading) {
+  if (state.drawStatus == DS_NONE) {
     // checking to make sure the image is in bounds:
     if (x_p + image->width > ILI9488_WIDTH_PX ||
         y_p + image->height > ILI9488_HEIGHT_PX) {
       return HAL_ERROR;
     }
 
-    state.currentlyLoading = true;
+    state.drawStatus = DS_IMG;
 
     // all pixels in image including ones that are clipped off by the edge of
     // copying state variables for compiler optimization (pointer aliasing)
@@ -840,8 +830,6 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
     state.height = imgHeight_p;
     state.objSize_p = imgWidth_p * imgHeight_p;
 
-    state.currentlyLoading = false;
-
     return ILI9488_Draw(spi);
   } else {
     return HAL_BUSY;
@@ -854,7 +842,7 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
                                    const uint16_t textSize,
                                    const bool overWrite) {
 
-  if (!state.currentlyLoading) {
+  if (state.drawStatus == DS_NONE) {
     // checking to make sure the text is in bounds
     uint16_t boundsWidth_p = CHARWIDTH * textSize; // in pixels
 
@@ -863,6 +851,8 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
       return HAL_ERROR;
     }
 
+    state.drawStatus = DS_TEXT;
+
     // text processing to make sure all characters are displayable
     for (uint8_t i = 0; i < textSize; i++) {
       // if not displayable set to blank character
@@ -870,8 +860,6 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
         text[i] = 32;
       }
     }
-
-    state.currentlyLoading = true;
 
     const uint32_t bytesPerChar_b = (CHARWIDTH * CHARHEIGHT) / 8; // in bytes
 
@@ -931,8 +919,6 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
     state.height = CHARHEIGHT;
     state.objSize_p = boundsWidth_p * CHARHEIGHT;
 
-    state.currentlyLoading = false;
-
     return ILI9488_Draw(spi);
   } else {
     return HAL_BUSY;
@@ -982,6 +968,7 @@ HAL_StatusTypeDef ILI9488_SetBackground(SPI_HandleTypeDef *spi,
 
 #else
   // drawing the background
+  state.backgroundImage = (Image_t *)bg;
   return ILI9488_BlitImage(spi, 0, 0, bg, true);
 
 #endif
@@ -1003,7 +990,7 @@ HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
   HAL_Delay(10);
 
   // powering testing switches
-  //  HAL_GPIO_WritePin(SWITCH_POWER_GPIO_Port, SWITCH_POWER_Pin, GPIO_PIN_SET);
+   // HAL_GPIO_WritePin(SWITCH_POWER_GPIO_Port, SWITCH_POWER_Pin, GPIO_PIN_SET);
 
   // backlight on
   // starting display backlight pwm timer
@@ -1126,7 +1113,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     // done drawing condition
     if (state.progress_eb >= state.target_eb) {
       ILI9488_Deselect();
-      state.currentlyDrawing = 0;
+      state.drawStatus = DS_NONE;
       return;
     }
 

@@ -39,7 +39,19 @@
 #define DS_IMG 2
 #define DS_TEXT 3
 
-// command enums
+// display command enums
+#define DCMD_SWRESET 0x01  // software reset
+#define DCMD_SLPOUT 0x11   // sleep out
+#define DCMD_ADJCTRL3 0xF7 // adjust control 3
+#define DCMD_MADCTL 0x36   // memory access control
+#define DCMD_WRCTRLD 0x53  // write ctrl display value
+#define DCMD_COLMOD 0x3A   // interface pixel format
+#define DCMD_INVON 0x21    // display inversion on
+#define DCMD_DISON 0x29    // display on
+#define DCMD_CASET 0x2A    // column set address
+#define DCMD_PASET 0x2B    // page set address
+#define DCMD_RAMWR 0x2C    // memory write
+#define DCMD_WRDISBV 0x51  // write display brightness value
 
 // colour enums
 #define COLOR_BLACK (uint8_t)0b00000000

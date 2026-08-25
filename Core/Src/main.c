@@ -167,50 +167,47 @@ int main(void) {
 
   // --- debugging --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-  // for (uint16_t i = 0; i < 149; i++) {
-  //   if (objects[i].type == BACKGROUND_OBJ_TYPE) {
-  //     HAL_SPIN(ILI9488_SetBackground(&hspi1, objects[i].img));
-  //   }
-  // }
-  //
-  //
-  // HAL_SPIN(ILI9488_SetBackground(&hspi1,
-  // &File_072_ObjNum_135_480x320_6_18_26));
+  for (uint16_t i = 0; i < 149; i++) {
+    if (objects[i].type == BACKGROUND_OBJ_TYPE) {
+      HAL_SPIN(ILI9488_SetBackground(&hspi1, objects[i].img));
+    }
+  }
 
-  // HAL_SPIN(ILI9488_SetBackground(&hspi1,
-  // &File_005_ObjNum_004_480x320_6_18_26));
+  HAL_SPIN(ILI9488_SetBackground(&hspi1, &File_072_ObjNum_135_480x320_6_18_26));
+
+  // HAL_SPIN(ILI9488_SetBackground(&hspi1, &File_005_ObjNum_004_480x320_6_18_26));
 
   // loading all smaller images to test placement
-  //   for (int i = 0; i < 149; i++) {
-  //     if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
-  //         objects[i].img->width != ILI9488_WIDTH_PX) {
-  //       HAL_SPIN(ILI9488_BlitImage(&hspi1, objects[i].x, objects[i].y,
-  //                                  objects[i].img, false
-  // #if COLOUR_ENABLED
-  //                                  ,
-  //                                  objects[i].colour
-  // #endif
-  //                                  ));
-  //       HAL_Delay(30);
-  //     }
-  //   }
-  //
-  //   HAL_Delay(500);
-  //
-  //   // loading all text to test placement
-  //   for (int i = 0; i < 149; i++) {
-  //     if (objects[i].type == TEXT_OBJ_TYPE) {
-  //       HAL_SPIN(ILI9488_BlitText(
-  //           &hspi1, objects[i].x, objects[i].y, "123456789012345",
-  //           (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH, false
-  // #if COLOUR_ENABLED
-  //           ,
-  //           objects[i].colour
-  // #endif
-  //           ));
-  //       HAL_Delay(30);
-  //     }
-  //   }
+  for (int i = 0; i < 149; i++) {
+    if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
+        objects[i].img->width != ILI9488_WIDTH_PX) {
+      HAL_SPIN(ILI9488_BlitImage(&hspi1, objects[i].x, objects[i].y,
+                                 objects[i].img, false
+#if COLOUR_ENABLED
+                                 ,
+                                 objects[i].colour
+#endif
+                                 ));
+      HAL_Delay(30);
+    }
+  }
+
+  HAL_Delay(500);
+
+  // loading all text to test placement
+  for (int i = 0; i < 149; i++) {
+    if (objects[i].type == TEXT_OBJ_TYPE) {
+      HAL_SPIN(ILI9488_BlitText(
+          &hspi1, objects[i].x, objects[i].y, "123456789012345",
+          (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH, false
+#if COLOUR_ENABLED
+          ,
+          objects[i].colour
+#endif
+          ));
+      HAL_Delay(30);
+    }
+  }
 
   /* USER CODE END 2 */
 

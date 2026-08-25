@@ -360,7 +360,7 @@ HAL_StatusTypeDef ILI9488_SetRange(SPI_HandleTypeDef *spi, uint16_t colStart,
                                    uint16_t colEnd, uint16_t rowStart,
                                    uint16_t rowEnd) {
   // set column address command
-  HAL_TRY(ILI9488_Cmd(spi, 0x2A));
+  HAL_TRY(ILI9488_Cmd(spi, DCMD_CASET));
 
   // parameters: starting col MSB, starting col LSB, ending col MSB, ending
   // col LSB
@@ -379,10 +379,10 @@ HAL_StatusTypeDef ILI9488_SetRange(SPI_HandleTypeDef *spi, uint16_t colStart,
   HAL_TRY(ILI9488_Data(spi, caset, 4));
 
   // set row address command
-  HAL_TRY(ILI9488_Cmd(spi, 0x2B));
+  HAL_TRY(ILI9488_Cmd(spi, DCMD_PASET));
   // parameters: starting row MSB, starting row LSB, ending row MSB, ending
   // row LSB
-  uint8_t raset[] = {
+  uint8_t paset[] = {
 
       (uint8_t)(rowStart >> 8),
 
@@ -392,7 +392,7 @@ HAL_StatusTypeDef ILI9488_SetRange(SPI_HandleTypeDef *spi, uint16_t colStart,
 
       (uint8_t)(rowEnd & 0xFF)};
 
-  HAL_TRY(ILI9488_Data(spi, raset, 4));
+  HAL_TRY(ILI9488_Data(spi, paset, 4));
 
   return HAL_OK;
 }
@@ -454,7 +454,7 @@ HAL_StatusTypeDef ILI9488_BlitBackground(SPI_HandleTypeDef *spi) {
     state.bgRowSkip_b = 0;
 
     // write data command
-    HAL_TRY(ILI9488_Cmd(spi, 0x2C));
+    HAL_TRY(ILI9488_Cmd(spi, DCMD_RAMWR));
 
     // setting to data mode
     HAL_GPIO_WritePin(DISPLAY_DC_GPIO_Port, DISPLAY_DC_Pin, GPIO_PIN_SET);
@@ -523,7 +523,7 @@ HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi) {
   state.width /= 8;
 
   // write data command
-  HAL_TRY(ILI9488_Cmd(spi, 0x2C));
+  HAL_TRY(ILI9488_Cmd(spi, DCMD_RAMWR));
 
   // setting to data mode
   HAL_GPIO_WritePin(DISPLAY_DC_GPIO_Port, DISPLAY_DC_Pin, GPIO_PIN_SET);
@@ -613,7 +613,7 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
     state.objCount = image->data[0];
 
     // write data command
-    HAL_TRY(ILI9488_Cmd(spi, 0x2C));
+    HAL_TRY(ILI9488_Cmd(spi, DCMD_RAMWR));
 
     // setting to data mode
     HAL_GPIO_WritePin(DISPLAY_DC_GPIO_Port, DISPLAY_DC_Pin, GPIO_PIN_SET);
@@ -739,7 +739,7 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
     state.objCount = 0; // column in bytes
 
     // write data command
-    HAL_TRY(ILI9488_Cmd(spi, 0x2C));
+    HAL_TRY(ILI9488_Cmd(spi, DCMD_RAMWR));
 
     // setting to data mode
     HAL_GPIO_WritePin(DISPLAY_DC_GPIO_Port, DISPLAY_DC_Pin, GPIO_PIN_SET);
@@ -973,7 +973,7 @@ HAL_StatusTypeDef ILI9488_SetBrightness(SPI_HandleTypeDef *spi,
   __HAL_TIM_SET_COMPARE(tim, TIM_CHANNEL_1, val);
 
   // for displays without a physical brightness pin
-  HAL_TRY(ILI9488_Cmd(spi, 0x51));
+  HAL_TRY(ILI9488_Cmd(spi, DCMD_WRDISBV));
   HAL_TRY(ILI9488_Data(spi, &val, 1));
 
   return HAL_OK;
@@ -1021,11 +1021,11 @@ BrightnessInfo_t ILI9488_Init(SPI_HandleTypeDef *spi,
   HAL_Delay(100);
 
   // software reset
-  ILI9488_Cmd(spi, 0x01);
+  ILI9488_Cmd(spi, DCMD_SWRESET);
   HAL_Delay(100);
 
   // exit sleep mode
-  ILI9488_Cmd(spi, 0x11);
+  ILI9488_Cmd(spi, DCMD_SLPOUT);
   HAL_Delay(10);
 
   // TODO remove this in production
@@ -1036,26 +1036,23 @@ BrightnessInfo_t ILI9488_Init(SPI_HandleTypeDef *spi,
   HAL_TIM_PWM_Start(backlightTimer, TIM_CHANNEL_1);
 
   // configuring extended command set for spi write
-  ILI9488_Cmd(spi, 0xF7);
+  ILI9488_Cmd(spi, DCMD_ADJCTRL3);
 
-  // uint8_t unlockData[] = {0xA9, 0x51, 0x2C, 0x82};
-  // HAL_TRY(ILI9488_Data(spi, &unlockData[0], 4));
+  uint8_t unlockData[] = {0xA9, 0x51, 0x2C, 0x82};
+  ILI9488_Data(spi, &unlockData[0], 4);
 
   // memory data access control - instruction 36h MADCTL
-  ILI9488_Cmd(spi, 0x36);
-  // same as st7796s
-  // 0b00101001
-  uint8_t madctl = 0x28;
+  ILI9488_Cmd(spi, DCMD_MADCTL);
+  uint8_t madctl = 0b00101000;
   ILI9488_Data(spi, &madctl, 1);
 
   // configuring brightness control settings - instruction 53h WRCTRLD
-  ILI9488_Cmd(spi, 0x53);
-  // 0 0 1 0 1 1 0 0
-  uint8_t brightnessCtl = 0x2C;
+  ILI9488_Cmd(spi, DCMD_WRCTRLD);
+  uint8_t brightnessCtl = 0b00101100;
   ILI9488_Data(spi, &brightnessCtl, 1);
 
   // Interface Pixel Format - instruction 3Ah COLMOD
-  ILI9488_Cmd(spi, 0x3A);
+  ILI9488_Cmd(spi, DCMD_COLMOD);
   // Lowest available is 3bit/pixel
   // 00000001
   // format: 0 0 R G B R G B
@@ -1071,14 +1068,11 @@ BrightnessInfo_t ILI9488_Init(SPI_HandleTypeDef *spi,
   //	ILI9488_DATA(spi, &inversion, 1);
 
   // enabling display inversion for IPS display
-  ILI9488_Cmd(spi, 0x21);
+  ILI9488_Cmd(spi, DCMD_INVON);
   // no data
 
-  // enabling partial mode
-  ILI9488_Cmd(spi, 0x12);
-
   // display on
-  ILI9488_Cmd(spi, 0x29);
+  ILI9488_Cmd(spi, DCMD_DISON);
 
   // initializing background to empty image
   ILI9488_SetBackground(spi, (Image_t *)&File_005_ObjNum_004_480x320_6_18_26);

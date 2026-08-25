@@ -13,7 +13,7 @@
 #define INC_DISPLAY_ILI9488_H_
 
 // flag to enable or disable colour
-#define COLOUR_ENABLED 0
+#define COLOUR_ENABLED 1
 
 // width and height of display in pixels
 #define ILI9488_WIDTH_PX 480
@@ -119,8 +119,8 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
                                     const bool overWrite, const uint8_t colour);
 HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
                                    uint16_t y_p, uint8_t text[],
-                                   const uint16_t textSize,
-                                   const bool overWrite, const uint8_t colour);
+                                   uint16_t textSize, const bool overWrite,
+                                   const uint8_t colour);
 
 #else
 
@@ -168,8 +168,7 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
                                     const bool overWrite);
 HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
                                    uint16_t y_p, uint8_t text[],
-                                   const uint16_t textSize,
-                                   const bool overWrite);
+                                   uint16_t textSize, const bool overWrite);
 #endif /* COLOUR_ENABLED */
 
 #endif /* INC_DISPLAY_ILI9488_H_ */

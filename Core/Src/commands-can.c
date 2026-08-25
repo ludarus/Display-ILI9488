@@ -200,7 +200,7 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
     // displaying
     // HAL_StatusTypeDef displayStatus =
     HAL_SPIN(ILI9488_BlitText(spi, objects[objNum - 1].x, objects[objNum - 1].y,
-                              charArray, target, true
+                              charArray, target, false
 
 #if COLOUR_ENABLED
                               ,
@@ -213,7 +213,10 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
     //                        "Disp text: \"%.*s\", objNum = %u\n", target,
     //                        charArray, objNum);
 
-    // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+    uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+                           "\"%.*s\", %u\n", target, charArray, objNum);
+
+    HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
     // restting target
     target = 0;
@@ -264,10 +267,10 @@ HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
                              ));
 
   // diagnostic logging
-  // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-  //                        "displayed image with objNum: %u\n", objNum);
+  uint8_t len =
+      snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg), "i %u\n", objNum);
 
-  // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+  HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
   return HAL_OK;
 }
@@ -531,6 +534,8 @@ CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
   canInterface->Init.ReceiveFifoLocked = DISABLE;
   canInterface->Init.TransmitFifoPriority = DISABLE;
 
+  // choosing lowest priority pin thats grounded as the can BAUD rate. Adjust
+  // accordingly
   if (HAL_GPIO_ReadPin(baudInput3Port, baudInput3Pin) == GPIO_PIN_RESET) {
     // 670kb baud (more accurately 666.666 baud)
     canInterface->Init.Prescaler = 4;

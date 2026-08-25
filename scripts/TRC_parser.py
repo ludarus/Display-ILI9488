@@ -1,6 +1,7 @@
 # will parse a trc file found in logs/ and output the according can messages
 import can
 import time
+from datetime import datetime
 import argparse
 import os
 import sys
@@ -96,9 +97,20 @@ def send_messages(messages: list[CAN_message]) -> None:
         # waiting the specified delay. will have some small time drift but its fine for this application
         time.sleep((messages[msgIdx].time - messages[msgIdx - 1].time) / 1000.0)
 
-        print(
-            f"sending msg with id = {hex(messages[msgIdx].id)}, data = {messages[msgIdx].data}"
-        )
+        match messages[msgIdx].id:
+            case 0x428:
+                # image
+                print(f"{datetime.now().strftime('%H:%M:%S.%f')[:-3]} | ", end="")
+                print(f"sending image {messages[msgIdx].data}")
+            case 0x420:
+                # text
+                print(f"{datetime.now().strftime('%H:%M:%S.%f')[:-3]} | ", end="")
+                print(f"sending text {messages[msgIdx].data}")
+            case _:
+                # print(
+                #     f"sending msg with id = {hex(messages[msgIdx].id)}, data = {messages[msgIdx].data}"
+                # )
+                ...
 
         # sending the message
         bus.send(

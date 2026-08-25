@@ -651,16 +651,24 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
 
 HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
                                    uint16_t y_p, uint8_t text[],
-                                   const uint16_t textSize,
-                                   const bool overWrite, const uint8_t colour) {
+                                   uint16_t textSize, const bool overWrite,
+                                   const uint8_t colour) {
 
   if (state.drawStatus == DS_NONE) {
     // checking to make sure the text is in bounds
-    const uint16_t boundsWidth_p = CHARWIDTH * textSize;
+    uint16_t boundsWidth_p = CHARWIDTH * textSize;
 
-    if (y_p + CHARHEIGHT > ILI9488_HEIGHT_PX ||
-        x_p + boundsWidth_p > ILI9488_WIDTH_PX) {
+    if (y_p + CHARHEIGHT > ILI9488_HEIGHT_PX || x_p > ILI9488_WIDTH_PX) {
       return HAL_ERROR;
+    }
+
+    // setting draw status to busy
+    state.drawStatus = DS_TEXT;
+
+    // clamping text size
+    if (boundsWidth_p + x_p > ILI9488_WIDTH_PX) {
+      textSize = (ILI9488_WIDTH_PX - x_p) / CHARWIDTH;
+      boundsWidth_p = CHARWIDTH * textSize;
     }
 
     // text processing to make sure all characters are displayable
@@ -670,9 +678,6 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
         text[i] = 32;
       }
     }
-
-    // setting draw status to busy
-    state.drawStatus = DS_TEXT;
 
     // setting range
     HAL_TRY(ILI9488_SetRange(spi, x_p, x_p + boundsWidth_p - 1, y_p,
@@ -839,19 +844,23 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
 // loads text with transparent background on OR mode
 HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
                                    uint16_t y_p, uint8_t text[],
-                                   const uint16_t textSize,
-                                   const bool overWrite) {
+                                   uint16_t textSize, const bool overWrite) {
 
   if (state.drawStatus == DS_NONE) {
     // checking to make sure the text is in bounds
     uint16_t boundsWidth_p = CHARWIDTH * textSize; // in pixels
 
-    if (y_p + CHARHEIGHT > ILI9488_HEIGHT_PX ||
-        x_p + boundsWidth_p > ILI9488_WIDTH_PX) {
+    if (y_p + CHARHEIGHT > ILI9488_HEIGHT_PX || x_p > ILI9488_WIDTH_PX) {
       return HAL_ERROR;
     }
 
     state.drawStatus = DS_TEXT;
+
+    // clamping text size
+    if (boundsWidth_p + x_p > ILI9488_WIDTH_PX) {
+      textSize = (ILI9488_WIDTH_PX - x_p) / CHARWIDTH;
+      boundsWidth_p = CHARWIDTH * textSize;
+    }
 
     // text processing to make sure all characters are displayable
     for (uint8_t i = 0; i < textSize; i++) {
@@ -989,8 +998,8 @@ HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
   HAL_TRY(ILI9488_Cmd(spi, 0x11));
   HAL_Delay(10);
 
-  // powering testing switches
-   // HAL_GPIO_WritePin(SWITCH_POWER_GPIO_Port, SWITCH_POWER_Pin, GPIO_PIN_SET);
+  // TODO remove this in production
+  HAL_GPIO_WritePin(SWITCH_POWER_GPIO_Port, SWITCH_POWER_Pin, GPIO_PIN_SET);
 
   // backlight on
   // starting display backlight pwm timer

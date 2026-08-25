@@ -9,8 +9,7 @@
 #include "File_005_ObjNum_004_480x320_6_18_26.h"
 #include "SYSFAIL_480x320.h"
 #include "alarm.h"
-#include "display-ili9488-colour.h"
-#include "font.h"
+#include "display-ili9488.h"
 #include "main.h"
 #include "stm32f091xc.h"
 #include "stm32f0xx_hal.h"
@@ -201,8 +200,14 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
     // displaying
     // HAL_StatusTypeDef displayStatus =
     HAL_SPIN(ILI9488_BlitText(spi, objects[objNum - 1].x, objects[objNum - 1].y,
-                              charArray, target, objects[objNum - 1].colour,
-                              true));
+                              charArray, target, true
+
+#if COLOUR_ENABLED
+                              ,
+                              objects[objNum - 1].colour
+#endif
+
+                              ));
 
     // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
     //                        "Disp text: \"%.*s\", objNum = %u\n", target,
@@ -250,8 +255,13 @@ HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
   }
 
   // display according image
-  HAL_SPIN(
-      ILI9488_BlitImage(spi, obj->x, obj->y, obj->img, obj->colour, false));
+  HAL_SPIN(ILI9488_BlitImage(spi, obj->x, obj->y, obj->img, false
+#if COLOUR_ENABLED
+                             ,
+                             obj->colour
+#endif
+
+                             ));
 
   // diagnostic logging
   // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
@@ -333,7 +343,12 @@ HAL_StatusTypeDef CMD_SysFail(CanRxMessage_t *msg) {
   HAL_UART_Transmit_IT(uart, (uint8_t *)"ERROR: SYSTEM FAILURE RECEIVED \n",
                        32);
 
-  ILI9488_BlitImage(spi, 0, 0, &SYSFAIL_480x320, COLOR_RED, true);
+  ILI9488_BlitImage(spi, 0, 0, &SYSFAIL_480x320, true
+#if COLOUR_ENABLED
+                    ,
+                    COLOR_RED
+#endif
+  );
   return HAL_OK;
 }
 
@@ -586,7 +601,13 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
         uart, (uint8_t *)"TIMEOUT: no command received in the last 4000ms\n",
         48);
 
-    HAL_SPIN(ILI9488_BlitImage(spi, 0, 0, &SYSFAIL_480x320, COLOR_RED, true));
+    HAL_SPIN(ILI9488_BlitImage(spi, 0, 0, &SYSFAIL_480x320, true
+#if COLOUR_ENABLED
+                               ,
+                               COLOR_RED
+#endif
+
+                               ));
 
     lastMsgTick = 0;
   }

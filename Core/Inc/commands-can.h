@@ -40,8 +40,7 @@ typedef struct {
 } CanRxMessage_t;
 
 typedef struct {
-  // objNum. Should be the index in the array, so probably remove this field
-  // later
+  // objNum. Should be the index in the array
   uint16_t id;
   uint8_t type;
   uint16_t x;
@@ -60,6 +59,7 @@ typedef struct {
   uint8_t cmdNum;
   // a function pointer to a handle that executes when the command is called
   HAL_StatusTypeDef (*handle)(CanRxMessage_t *);
+  // for logging/debugging
   uint16_t numberOfTimesCalled;
 } CanCommand_t;
 

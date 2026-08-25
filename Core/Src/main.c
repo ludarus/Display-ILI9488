@@ -31,7 +31,7 @@
 #include "SYSFAIL_480x320.h"
 #include "alarm.h"
 #include "commands-can.h"
-#include "display-ili9488-colour.h"
+#include "display-ili9488.h"
 #include "font.h"
 #include "stm32f0xx_hal.h"
 #include "stm32f0xx_hal_tim.h"
@@ -167,71 +167,48 @@ int main(void) {
 
   // --- debugging --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-  // for (uint8_t i = 0; i < 69; i++) {
-  //   ILI9488_SetRange(&hspi1, 30 + i * 2, 40 + i * 2, 0 + i * 2, 12 + i * 2);
-  // }
-
-  ILI9488_SetRange(&hspi1, 10, 20, 10, 20);
-
   for (uint16_t i = 0; i < 149; i++) {
     if (objects[i].type == BACKGROUND_OBJ_TYPE) {
       HAL_SPIN(ILI9488_SetBackground(&hspi1, objects[i].img));
     }
   }
-  //
+
   ILI9488_SetBackground(&hspi1, &File_072_ObjNum_135_480x320_6_18_26);
-  //
+
   // loading all smaller images to test placement
   for (int i = 0; i < 149; i++) {
     if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
         objects[i].img->width != ILI9488_WIDTH_PX) {
       HAL_SPIN(ILI9488_BlitImage(&hspi1, objects[i].x, objects[i].y,
-                                 objects[i].img, objects[i].colour, false));
+                                 objects[i].img, false
+#if COLOUR_ENABLED
+                                 ,
+                                 objects[i].colour
+#endif
+                                 ));
+      HAL_Delay(30);
     }
   }
 
-  HAL_Delay(1000);
-
-  (ILI9488_BlitText(&hspi1, 0, 5, "RED", 3, COLOR_RED, false));
-
   HAL_Delay(500);
 
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 1), "GREEN", 5, COLOR_GREEN, false));
-
-  HAL_Delay(500);
-
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 2), "BLUE", 4, COLOR_BLUE, false));
-
-  HAL_Delay(500);
-
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 3), "YELLOW", 6, COLOR_YELLOW, false));
-
-  HAL_Delay(500);
-
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 4), "CYAN", 4, COLOR_CYAN, false));
-
-  HAL_Delay(500);
-
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 5), "PURPLE", 6, COLOR_PURPLE, false));
-
-  HAL_Delay(500);
-
-  (ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), "WHITE", 5, COLOR_WHITE, false));
-
-  HAL_Delay(500);
-  //
-  // // loading all text to test placement
+  // loading all text to test placement
   for (int i = 0; i < 149; i++) {
     if (objects[i].type == TEXT_OBJ_TYPE) {
-      HAL_SPIN(ILI9488_BlitText(&hspi1, objects[i].x, objects[i].y,
-                                "123456789012345",
-                                (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH,
-                                objects[i].colour, true));
+      HAL_SPIN(ILI9488_BlitText(
+          &hspi1, objects[i].x, objects[i].y, "123456789012345",
+          (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH, false
+#if COLOUR_ENABLED
+          ,
+          objects[i].colour
+#endif
+          ));
+      HAL_Delay(30);
     }
   }
 
   HAL_Delay(1000);
-  //
+
   /* USER CODE END 2 */
 
   /* Infinite loop */

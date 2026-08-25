@@ -1,20 +1,19 @@
 /*
- * display.h
+ * display-ili9488.h
  *
- *  Created on: Jun 23, 2026
+ *  Created on: 24 Aug 2026
  *      Author: Luke Fadel
- *
- *      Type annotations: _p = in pixels, _b = in bytes
  */
-#include "character.h"
+
 #include "image.h"
 #include "main.h"
-#include "stm32f0xx_hal_def.h"
-#include "stm32f0xx_hal_tim.h"
 #include <stdbool.h>
 
 #ifndef INC_DISPLAY_ILI9488_H_
 #define INC_DISPLAY_ILI9488_H_
+
+// flag to enable or disable colour
+#define COLOUR_ENABLED 0
 
 // width and height of display in pixels
 #define ILI9488_WIDTH_PX 480
@@ -40,6 +39,8 @@
 #define DS_IMG 2
 #define DS_TEXT 3
 
+// command enums
+
 // colour enums
 #define COLOR_BLACK (uint8_t)0b00000000
 #define COLOR_WHITE (uint8_t)0b00111111
@@ -50,15 +51,16 @@
 #define COLOR_CYAN (uint8_t)0b00011011
 #define COLOR_YELLOW (uint8_t)0b00110110
 
-// macros to set bits in a bit packed array. Only used for debugging functions
-// sets pixel/bit to 1
-#define SET_PIXEL(array, bit)                                                  \
-  ((array)[(bit) / 8] |= (1u << ((bit) % 8))) // returns void
-// sets pixel/bit to 0
-#define CLR_PIXEL(arr, bit) ((arr)[(bit) / 8] &= ~(1u << ((bit) % 8)))
-// shifting byte to desired bit and masking off the rest of the bit
-#define GET_PIXEL(array, bit)                                                  \
-  (((array)[(bit) / 8] >> ((bit) % 8)) & 1u) // returns 0u or 1u
+// public driver functions
+
+HAL_StatusTypeDef ILI9488_SetBrightness(SPI_HandleTypeDef *spi,
+                                        TIM_HandleTypeDef *tim, uint8_t idx);
+HAL_StatusTypeDef ILI9488_SetBackground(SPI_HandleTypeDef *spi,
+                                        const Image_t *bg);
+HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
+                               TIM_HandleTypeDef *backlightTimer);
+
+#if COLOUR_ENABLED
 
 // chunk is in expanded bytes, 2px = 1eb
 // struct to store the current state of object rendering,
@@ -112,29 +114,62 @@ typedef struct {
   uint8_t background[((480 * 320) + 7) / 8]; // in bytes
 } ImageTransferState_t;
 
-// public functions
-HAL_StatusTypeDef ILI9488_SetBrightness(SPI_HandleTypeDef *spi,
-                                        TIM_HandleTypeDef *tim, uint8_t val);
-HAL_StatusTypeDef ILI9488_SetBackground(SPI_HandleTypeDef *spi,
-                                        const Image_t *bg);
-HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
-                               TIM_HandleTypeDef *backlightTimer);
 HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
                                     uint16_t y_p, const Image_t *image,
-                                    const uint8_t colour, const bool overWrite);
+                                    const bool overWrite, const uint8_t colour);
 HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
                                    uint16_t y_p, uint8_t text[],
                                    const uint16_t textSize,
-                                   const uint8_t colour, const bool overWrite);
-// for debugging:
-HAL_StatusTypeDef ILI9488_SetRange(SPI_HandleTypeDef *spi, uint16_t colStart,
-                                   uint16_t colEnd, uint16_t rowStart,
-                                   uint16_t rowEnd);
-// debugging function
-void DEBUG_sendpixels(SPI_HandleTypeDef *spi, uint8_t pixel, uint32_t count);
+                                   const bool overWrite, const uint8_t colour);
 
-HAL_StatusTypeDef ILI9488_Cmd(SPI_HandleTypeDef *spi, uint8_t cmd);
-HAL_StatusTypeDef ILI9488_Data(SPI_HandleTypeDef *spi, uint8_t *data,
-                               uint16_t size);
+#else
+
+// struct to store the current state of image rendering,
+// as drawing happens between functions and callbacks so shared state is needed
+// Reordered for optimal cache utilization and memory efficiency by claude
+typedef struct {
+  // state variables
+  volatile bool currentlyDrawing;
+  volatile bool currentlyLoading;
+  // buffer toggle
+  volatile uint8_t activeBuf;
+
+  // double buffer. aligned for lookup table casting (uint32_t -> uint8_t)
+  uint8_t buf[2][CHUNK] __attribute__((aligned(4)));
+
+  // --- Image transfer geometry, accessed together when setting up a transfer
+  uint16_t x;      // in bytes
+  uint16_t y;      // in pixels
+  uint16_t width;  // in bytes
+  uint16_t height; // in pixels
+
+  // --- cursor location when loading image ---
+  uint32_t fillPos;
+  uint16_t fillCol;
+  uint16_t rowSkip;
+
+  // --- background image ---
+  Image_t *backgroundImage;
+
+  // --- Progress tracking, accessed together during transfer ---
+  // progress and target cursors measured in expanded bytes
+  // 1 expanded byte holds 2 pixels
+  volatile uint32_t progress_eb; // in pixels
+  uint32_t target_eb;            // in bytes/pixel
+  uint32_t objSize_p;            // in pixels
+
+  // large bit-packed buffer last: no alignment requirement, so it can
+  // safely absorb any odd byte count without forcing padding after it
+  uint8_t screenCopy[((480 * 320) + 7) / 8]; // in bytes
+} ImageTransferState_t;
+
+HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
+                                    uint16_t y_p, const Image_t *image,
+                                    const bool overWrite);
+HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
+                                   uint16_t y_p, uint8_t text[],
+                                   const uint16_t textSize,
+                                   const bool overWrite);
+#endif /* COLOUR_ENABLED */
 
 #endif /* INC_DISPLAY_ILI9488_H_ */

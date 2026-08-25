@@ -175,7 +175,7 @@ int main(void) {
 
   HAL_SPIN(ILI9488_SetBackground(&hspi1, &File_072_ObjNum_135_480x320_6_18_26));
 
-  // HAL_SPIN(ILI9488_SetBackground(&hspi1, &File_005_ObjNum_004_480x320_6_18_26));
+  HAL_SPIN(ILI9488_SetBackground(&hspi1, &File_006_ObjNum_005_480x320_6_18_26_C));
 
   // loading all smaller images to test placement
   for (int i = 0; i < 149; i++) {

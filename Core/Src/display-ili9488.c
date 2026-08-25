@@ -9,6 +9,7 @@
 #include "font.h"
 #include "main.h"
 #include "stm32f0xx_hal.h"
+#include "stm32f0xx_hal_spi.h"
 #include "tables.h"
 
 //--------------------------------------------------------------------------------
@@ -394,6 +395,35 @@ HAL_StatusTypeDef ILI9488_SetRange(SPI_HandleTypeDef *spi, uint16_t colStart,
   HAL_TRY(ILI9488_Data(spi, raset, 4));
 
   return HAL_OK;
+}
+
+BrightnessInfo_t ILI9488_BrightnessInit(SPI_HandleTypeDef *spi,
+                                        TIM_HandleTypeDef *backlightTimer) {
+  BrightnessInfo_t output;
+  // reading flash to get last value of pointer
+  // two bytes per half word
+  for (int32_t offset = FLASH_PAGE_SIZE - 2; offset >= 0; offset -= 2) {
+    // checking if the 16 bit half word is smaller than the default value
+    // protocol: store the brightness val in the first 8 bits of the halfword,
+    // then set the last 8 bits to 0 to indicate that the byte has been written
+    if (*(__IO uint16_t *)(offset + BRIGHTNESS_PAGE_ADDR) < 0xFFFF) {
+      output.flashOffset = (uint32_t)offset + 2;
+      // setting brightness
+      output.prevBrightnessIdx =
+          *(__IO uint8_t *)(offset + BRIGHTNESS_PAGE_ADDR);
+
+      ILI9488_SetBrightness(spi, backlightTimer, output.prevBrightnessIdx);
+
+      return output;
+    }
+  }
+
+  // default value if one can't be found in flash
+  output.flashOffset = 0;
+
+  ILI9488_SetBrightness(spi, backlightTimer, 29);
+
+  return output;
 }
 
 #if COLOUR_ENABLED
@@ -983,19 +1013,19 @@ HAL_StatusTypeDef ILI9488_SetBackground(SPI_HandleTypeDef *spi,
 #endif
 }
 
-HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
-                               TIM_HandleTypeDef *backlightTimer) {
+BrightnessInfo_t ILI9488_Init(SPI_HandleTypeDef *spi,
+                              TIM_HandleTypeDef *backlightTimer) {
 
   // hardware reset
   ILI9488_Reset();
   HAL_Delay(100);
 
   // software reset
-  HAL_TRY(ILI9488_Cmd(spi, 0x01));
+  ILI9488_Cmd(spi, 0x01);
   HAL_Delay(100);
 
   // exit sleep mode
-  HAL_TRY(ILI9488_Cmd(spi, 0x11));
+  ILI9488_Cmd(spi, 0x11);
   HAL_Delay(10);
 
   // TODO remove this in production
@@ -1006,32 +1036,32 @@ HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
   HAL_TIM_PWM_Start(backlightTimer, TIM_CHANNEL_1);
 
   // configuring extended command set for spi write
-  HAL_TRY(ILI9488_Cmd(spi, 0xF7));
+  ILI9488_Cmd(spi, 0xF7);
 
   // uint8_t unlockData[] = {0xA9, 0x51, 0x2C, 0x82};
   // HAL_TRY(ILI9488_Data(spi, &unlockData[0], 4));
 
   // memory data access control - instruction 36h MADCTL
-  HAL_TRY(ILI9488_Cmd(spi, 0x36));
+  ILI9488_Cmd(spi, 0x36);
   // same as st7796s
   // 0b00101001
   uint8_t madctl = 0x28;
-  HAL_TRY(ILI9488_Data(spi, &madctl, 1));
+  ILI9488_Data(spi, &madctl, 1);
 
   // configuring brightness control settings - instruction 53h WRCTRLD
-  HAL_TRY(ILI9488_Cmd(spi, 0x53));
+  ILI9488_Cmd(spi, 0x53);
   // 0 0 1 0 1 1 0 0
   uint8_t brightnessCtl = 0x2C;
-  HAL_TRY(ILI9488_Data(spi, &brightnessCtl, 1));
+  ILI9488_Data(spi, &brightnessCtl, 1);
 
   // Interface Pixel Format - instruction 3Ah COLMOD
-  HAL_TRY(ILI9488_Cmd(spi, 0x3A));
+  ILI9488_Cmd(spi, 0x3A);
   // Lowest available is 3bit/pixel
   // 00000001
   // format: 0 0 R G B R G B
   // each byte = two pixels due to padding
   uint8_t colmod = 0b01000001;
-  HAL_TRY(ILI9488_Data(spi, &colmod, 1));
+  ILI9488_Data(spi, &colmod, 1);
 
   // Column inversion for display longevity
   // update: seems to cause flicker on this display?
@@ -1041,18 +1071,19 @@ HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
   //	ILI9488_DATA(spi, &inversion, 1);
 
   // enabling display inversion for IPS display
-  HAL_TRY(ILI9488_Cmd(spi, 0x21));
+  ILI9488_Cmd(spi, 0x21);
   // no data
 
   // enabling partial mode
-  HAL_TRY(ILI9488_Cmd(spi, 0x12));
+  ILI9488_Cmd(spi, 0x12);
 
   // display on
-  HAL_TRY(ILI9488_Cmd(spi, 0x29));
+  ILI9488_Cmd(spi, 0x29);
 
   // initializing background to empty image
-  return ILI9488_SetBackground(spi,
-                               (Image_t *)&File_005_ObjNum_004_480x320_6_18_26);
+  ILI9488_SetBackground(spi, (Image_t *)&File_005_ObjNum_004_480x320_6_18_26);
+
+  return ILI9488_BrightnessInit(spi, backlightTimer);
 }
 
 //--------------------------------------------------------------------------------

@@ -51,14 +51,18 @@
 #define COLOR_CYAN (uint8_t)0b00011011
 #define COLOR_YELLOW (uint8_t)0b00110110
 
-// public driver functions
+typedef struct {
+  uint16_t flashOffset;
+  uint8_t prevBrightnessIdx;
+} BrightnessInfo_t;
 
+// public driver functions
 HAL_StatusTypeDef ILI9488_SetBrightness(SPI_HandleTypeDef *spi,
                                         TIM_HandleTypeDef *tim, uint8_t idx);
 HAL_StatusTypeDef ILI9488_SetBackground(SPI_HandleTypeDef *spi,
                                         const Image_t *bg);
-HAL_StatusTypeDef ILI9488_Init(SPI_HandleTypeDef *spi,
-                               TIM_HandleTypeDef *backlightTimer);
+BrightnessInfo_t ILI9488_Init(SPI_HandleTypeDef *spi,
+                              TIM_HandleTypeDef *backlightTimer);
 
 #if COLOUR_ENABLED
 

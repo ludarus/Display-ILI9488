@@ -71,39 +71,6 @@ static TIM_HandleTypeDef *backlightTimer;
 
 // private functions
 
-// TODO move this?
-HAL_StatusTypeDef brightnessInit() {
-  // reading flash to get last value of pointer
-  // two bytes per half word
-  for (int32_t offset = FLASH_PAGE_SIZE - 2; offset >= 0; offset -= 2) {
-    // checking if the 16 bit half word is smaller than the default value
-    // protocol: store the brightness val in the first 8 bits of the halfword,
-    // then set the last 8 bits to 0 to indicate that the byte has been written
-    if (*(__IO uint16_t *)(offset + BRIGHTNESS_PAGE_ADDR) < 0xFFFF) {
-      flashOffset = (uint32_t)offset + 2;
-      // setting brightness
-      // diagnostic logging
-      uint8_t len =
-          snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-                   "successfully read previous brightness value, offset = %u\n",
-                   flashOffset);
-
-      HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
-
-      prevBrightnessIdx = *(__IO uint8_t *)(offset + BRIGHTNESS_PAGE_ADDR);
-
-      return ILI9488_SetBrightness(spi, backlightTimer, prevBrightnessIdx);
-    }
-  }
-
-  // default value if one can't be found in flash
-  flashOffset = 0;
-  HAL_UART_Transmit_IT(uart, (uint8_t *)"could not find previous flash value\n",
-                       36);
-
-  return ILI9488_SetBrightness(spi, backlightTimer, 29);
-}
-
 // handles. TODO finish them when given the objnum and groupnum to image mapping
 HAL_StatusTypeDef CMD_DispBg(CanRxMessage_t *msg) {
   // cmdNum = 0x83
@@ -465,9 +432,10 @@ CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
               UART_HandleTypeDef *serialLoggingInterface,
               TIM_HandleTypeDef *alarmPWMTimerInterface,
               TIM_HandleTypeDef *backlightPWMTimerInterface,
-              GPIO_TypeDef *baudInput1Port, uint16_t baudInput1Pin,
-              GPIO_TypeDef *baudInput2Port, uint16_t baudInput2Pin,
-              GPIO_TypeDef *baudInput3Port, uint16_t baudInput3Pin) {
+              BrightnessInfo_t brightnessSettings, GPIO_TypeDef *baudInput1Port,
+              uint16_t baudInput1Pin, GPIO_TypeDef *baudInput2Port,
+              uint16_t baudInput2Pin, GPIO_TypeDef *baudInput3Port,
+              uint16_t baudInput3Pin) {
 
   can = canInterface;
   spi = displaySpiInterface;
@@ -480,7 +448,8 @@ CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
   HAL_Delay(500);
 
   // display brightness
-  brightnessInit();
+  flashOffset = brightnessSettings.flashOffset;
+  prevBrightnessIdx = brightnessSettings.prevBrightnessIdx;
 
   // configuring filter to specifically only accept the specific IDS mentioned
   // in the raymond protocol

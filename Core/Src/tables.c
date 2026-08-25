@@ -563,7 +563,7 @@ const uint32_t bgPixelTable[256] = {
     0x36363600, 0x36363630, 0x36363606, 0x36363636};
 
 // table to map brightness power level values to perceived brightness values
-const uint8_t brightnessTable[] = {
+const uint8_t brightnessTable[40] = {
     1,   2,   3,   4,   6,   9,   12,  15,  18,  22,  26,  31,  35,  40,
     46,  51,  57,  63,  69,  76,  83,  90,  97,  105, 112, 120, 128, 137,
     146, 154, 164, 173, 182, 192, 202, 212, 223, 233, 244, 255,

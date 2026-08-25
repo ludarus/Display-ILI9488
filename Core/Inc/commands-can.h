@@ -8,10 +8,9 @@
 #ifndef INC_COMMANDS_CAN_H_
 #define INC_COMMANDS_CAN_H_
 
+#include "display-ili9488.h"
 #include "image.h"
 #include "main.h"
-#include "stm32f0xx_hal_def.h"
-#include "stm32f0xx_hal_tim.h"
 #include <stdbool.h>
 
 // object types
@@ -29,9 +28,10 @@ CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
               UART_HandleTypeDef *serialLoggingInterface,
               TIM_HandleTypeDef *alarmPWMTimerInterface,
               TIM_HandleTypeDef *backlightPWMTimerInterface,
-              GPIO_TypeDef *baudInput1Port, uint16_t baudInput1Pin,
-              GPIO_TypeDef *baudInput2Port, uint16_t baudInput2Pin,
-              GPIO_TypeDef *baudInput3Port, uint16_t baudInput3Pin);
+              BrightnessInfo_t brightnessSettings, GPIO_TypeDef *baudInput1Port,
+              uint16_t baudInput1Pin, GPIO_TypeDef *baudInput2Port,
+              uint16_t baudInput2Pin, GPIO_TypeDef *baudInput3Port,
+              uint16_t baudInput3Pin);
 HAL_StatusTypeDef CAN_CMDS_Process(void);
 
 typedef struct {
@@ -50,8 +50,8 @@ typedef struct {
 } Obj_t;
 
 typedef struct {
-  // what even is this? please get clarification because it's currently just an
-  // array Image_t *images[];
+  // what even is this? please get clarification because it's currently just
+  // an array Image_t *images[];
 } Grp_t;
 
 typedef struct {

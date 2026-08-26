@@ -175,7 +175,8 @@ int main(void) {
 
   HAL_SPIN(ILI9488_SetBackground(&hspi1, &File_072_ObjNum_135_480x320_6_18_26));
 
-  HAL_SPIN(ILI9488_SetBackground(&hspi1, &File_006_ObjNum_005_480x320_6_18_26_C));
+  HAL_SPIN(
+      ILI9488_SetBackground(&hspi1, &File_006_ObjNum_005_480x320_6_18_26_C));
 
   // loading all smaller images to test placement
   for (int i = 0; i < 149; i++) {
@@ -208,6 +209,14 @@ int main(void) {
       HAL_Delay(30);
     }
   }
+
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 8, 10, "gggggg lol", 10, true
+#if COLOUR_ENABLED
+                            ,
+                            COLOR_PURPLE
+#endif
+                            ));
+  HAL_Delay(1000);
 
   /* USER CODE END 2 */
 

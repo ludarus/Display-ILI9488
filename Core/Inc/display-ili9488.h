@@ -52,6 +52,11 @@
 #define DCMD_PASET 0x2B    // page set address
 #define DCMD_RAMWR 0x2C    // memory write
 #define DCMD_WRDISBV 0x51  // write display brightness value
+#define DCMD_PGAMCTRL 0xE0 // positive gamma control
+#define DCMD_NGAMCTRL 0xE1 // negative gamma control
+#define DCMD_VMCTRL 0xC5   // VCOM control
+#define DCMD_CECTRL1 0xB9  // color enhancement control 1
+#define DCMD_CECTRL2 0xBA  // color enhancement control 2
 
 // colour enums
 #define COLOR_BLACK (uint8_t)0b00000000

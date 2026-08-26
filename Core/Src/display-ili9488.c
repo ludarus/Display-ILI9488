@@ -1067,6 +1067,39 @@ BrightnessInfo_t ILI9488_Init(SPI_HandleTypeDef *spi,
   //	uint8_t inversion = 0x01;
   //	ILI9488_DATA(spi, &inversion, 1);
 
+  // gamma profile
+  ILI9488_Cmd(spi, DCMD_PGAMCTRL);
+  uint8_t pgamma[15] = {0x00, 0x03, 0x09, 0x08, 0x16, 0x0A, 0x3F, 0x78,
+                        0x4C, 0x09, 0x0A, 0x08, 0x16, 0x1A, 0x0F};
+  ILI9488_Data(spi, pgamma, 15);
+
+  ILI9488_Cmd(spi, DCMD_NGAMCTRL);
+  uint8_t ngamma[15] = {0x00, 0x16, 0x19, 0x03, 0x0F, 0x05, 0x32, 0x45,
+                        0x46, 0x04, 0x0E, 0x0D, 0x35, 0x37, 0x0F};
+  ILI9488_Data(spi, ngamma, 15);
+
+  // VCOM value for more display tweaks
+  ILI9488_Cmd(spi, DCMD_VMCTRL);
+  uint8_t vcom[3] = {0x00, 0x12, 0x80};
+  ILI9488_Data(spi, vcom, 3);
+
+  // colour enhancement
+  ILI9488_Cmd(spi, DCMD_CECTRL1);
+  uint8_t cectrl1[12] = {
+      0x01, 0x01, 0x01, 0x01, // First_Axis  (Red)     1-4
+      0x40, 0x40, 0x40, 0x40, // Second_Axis (Yellow)  1-4
+      0x01, 0x01, 0x01, 0x01, // Third_Axis  (Green)   1-4
+  };
+  ILI9488_Data(spi, cectrl1, 12);
+
+  ILI9488_Cmd(spi, DCMD_CECTRL2);
+  uint8_t cectrl2[12] = {
+      0x40, 0x40, 0x40, 0x40, // Fourth_Axis (Cyan)    1-4
+      0x40, 0x40, 0x40, 0x40, // Fifth_Axis  (Blue)    1-4
+      0x40, 0x40, 0x40, 0x40, // Sixth_Axis  (Magenta) 1-4
+  };
+  ILI9488_Data(spi, cectrl2, 12);
+
   // enabling display inversion for IPS display
   ILI9488_Cmd(spi, DCMD_INVON);
   // no data

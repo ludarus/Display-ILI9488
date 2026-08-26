@@ -64,9 +64,9 @@
 #define COLOR_RED (uint8_t)0b00100100
 #define COLOR_GREEN (uint8_t)0b00010010
 #define COLOR_BLUE (uint8_t)0b00001001
-#define COLOR_PURPLE (uint8_t)0b00101101
+#define COLOR_PURPLE (uint8_t)0b0010USB to CAN adapter to emulate the log files you sent me. If you have an actual CAN hub that would probably work better. The baud defaults to 128 kb, and if you connect a grounded jumper to one of the CAN input pins, it will select a higher baud rate instead: 250kb1101
 #define COLOR_CYAN (uint8_t)0b00011011
-#define COLOR_YELLOW (uint8_t)0b00110110
+#define COLOR_YELLOW (uint8_t)0b00110100
 
 typedef struct {
   uint16_t flashOffset;

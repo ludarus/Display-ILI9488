@@ -5,12 +5,8 @@
  *      Author: Luke Fadel
  */
 
+#include "switches.h"
 #include "main.h"
-#include "stm32f0xx.h"
-#include "stm32f0xx_hal_can.h"
-#include "stm32f0xx_hal_def.h"
-#include "stm32f0xx_hal_gpio.h"
-#include <stdint.h>
 
 // arrays 1-3 are for the last 3 states, array 4 is for the debounced state
 static uint8_t switchState[4][5];
@@ -47,7 +43,7 @@ HAL_StatusTypeDef SWITCHES_Process(CAN_HandleTypeDef *canInterface) {
     // transmitting debounced state
     CAN_TxHeaderTypeDef header = {0};
 
-	 // 1 bytes of data, 1 bit per switch
+    // 1 bytes of data, 1 bit per switch
     header.DLC = 1;
 
     // as specified in protocol

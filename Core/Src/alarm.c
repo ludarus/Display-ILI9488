@@ -6,9 +6,7 @@
  */
 
 #include "alarm.h"
-#include "stm32f0xx_hal_tim.h"
 #include <stdbool.h>
-#include <stdint.h>
 
 // frequencies for the alarm
 #define CLOCK0 14400

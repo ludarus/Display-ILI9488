@@ -21,20 +21,12 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "File_005_ObjNum_004_480x320_6_18_26.h"
 #include "File_006_ObjNum_005_480x320_6_18_26_C.h"
-#include "File_069_ObjNum_124_64x103_6_19_26.h"
 #include "File_072_ObjNum_135_480x320_6_18_26.h"
-#include "File_073_ObjNum_136_480x320_6_18_26.h"
-#include "File_077_ObjNum_147_480x320_6_18_26.h"
-#include "File_079_ObjNum_149_480x320_6_17_26.h"
-#include "SYSFAIL_480x320.h"
 #include "alarm.h"
 #include "commands-can.h"
 #include "display-ili9488.h"
 #include "font.h"
-#include "stm32f0xx_hal.h"
-#include "stm32f0xx_hal_tim.h"
 #include "switches.h"
 #include "tables.h"
 
@@ -186,7 +178,8 @@ int main(void) {
                                  objects[i].img, false
 #if COLOUR_ENABLED
                                  ,
-                                 objects[i].colour
+                                 // objects[i].colour
+                                 COLOR_YELLOW
 #endif
                                  ));
       HAL_Delay(30);
@@ -203,7 +196,8 @@ int main(void) {
           (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH, false
 #if COLOUR_ENABLED
           ,
-          objects[i].colour
+          // objects[i].colour
+          COLOR_YELLOW
 #endif
           ));
       HAL_Delay(30);
@@ -213,7 +207,7 @@ int main(void) {
   HAL_SPIN(ILI9488_BlitText(&hspi1, 8, 10, "gggggg lol", 10, true
 #if COLOUR_ENABLED
                             ,
-                            COLOR_PURPLE
+                            COLOR_YELLOW
 #endif
                             ));
   HAL_Delay(1000);

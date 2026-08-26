@@ -8,10 +8,9 @@
 #ifndef INC_COMMANDS_CAN_H_
 #define INC_COMMANDS_CAN_H_
 
-#include "display-ili9488.h"
+#include "stm32f0xx_hal.h""
 #include "image.h"
-#include "main.h"
-#include <stdbool.h>
+#include "display-ili9488.h"
 
 // object types
 #define TABLE_OBJ_TYPE 13

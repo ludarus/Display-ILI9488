@@ -5,8 +5,7 @@
  *      Author: Luke Fadel
  */
 
-#include "main.h"
-#include "stm32f0xx_hal_def.h"
+#include "stm32f0xx_hal.h"
 
 #ifndef INC_SWITCHES_H_
 #define INC_SWITCHES_H_

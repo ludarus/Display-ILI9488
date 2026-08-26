@@ -8,9 +8,7 @@
 #ifndef INC_ALARM_H_
 #define INC_ALARM_H_
 
-#include "main.h"
-#include "stm32f0xx_hal_tim_ex.h"
-
+#include "stm32f0xx_hal.h"
 
 void ALARM_Set(TIM_HandleTypeDef *alarmTimer, uint8_t frequencyIndex,
                uint8_t dutyCycle);

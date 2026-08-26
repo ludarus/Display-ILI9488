@@ -10,24 +10,9 @@
 #include "SYSFAIL_480x320.h"
 #include "alarm.h"
 #include "display-ili9488.h"
-#include "main.h"
-#include "stm32f091xc.h"
 #include "stm32f0xx_hal.h"
-#include "stm32f0xx_hal_can.h"
-#include "stm32f0xx_hal_def.h"
-#include "stm32f0xx_hal_flash.h"
-#include "stm32f0xx_hal_flash_ex.h"
-#include "stm32f0xx_hal_gpio.h"
-#include "stm32f0xx_hal_spi.h"
-#include "stm32f0xx_hal_tim.h"
-#include "stm32f0xx_hal_uart.h"
 #include "tables.h"
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
-
-// failure image
-#include "SYSFAIL_480x320.h"
 
 // TODO get correct version string
 const uint8_t version[8] = "DSP12345";

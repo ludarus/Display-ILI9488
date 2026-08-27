@@ -6,28 +6,54 @@
 - Load project onto MCU with debugger of choice
 
 # Functionality
-- Image and text displaying
-    - Blit with OR mode or overwrite mode to either replace the current display section or draw on top of it
-- Variable image location
-    - Off screen drawing is supported
-- 1 bit per pixel resolution
+- Specialized driver for the Toyota Redmond CAN protocol
+    - Hand coded, **NON-AGENTIC** development for highest possible code quality
+    - MCU: STM32F091RC
+    - Display controller: ILI9488 (480x320 resolution)
+- Optimized image and text blitting
+- Colour mode and monochrome mode
+- Blit with OR mode or overwrite mode to combine with or replace the background
 - Partial display updates
-    - Write only the updated region of the screen to the display controller
-- Serial connection 
-    - Receive, process and send diagnostics via USART serial connection
-- CAN connection
-    - Receive and process CAN 2.0A commands
+    - Write only the updated region to the screen
+- SPI display connection at 12MBit baud
+- CAN 2.0A network connection
+    - Filter only relevant commands from protocol and display accordingly
+    - Supports 128kb, 256kb, 500kb and 666.6kb baud rates
+- Switch debouncing and broadcasting on CAN network
+- PWM Alarm support 
+    - Simple menu beeps
+    - Togglable alarm with multiple frequencies
+- UART serial logging
+- Image compression and decompression to store in FLASH memory
+- Gamma curved brightness adjustment
 
-# Documentation
-- Pixels are bitpacked to save memory
-- Pixels are stored LSB first
-- A lookup table is used for fast byte unpacking
-    - Expansion to 3 bit per pixel colour resolution, plus an additional pixel of padding
-- RLE is used to compress the images
-- Bitpacking is used to compress the font characters
-- Chunking and a dual buffer is used to transmit the image data via the SPI connection
+# Flow Details
+- **Data Transmission - Monochrome Driver**
+    - A clone of the screen buffer is bitpacked in memory and modified by the various text or image loading functions
+    - This bitpacked data is then expanded to full colour resolution to a double buffer, which transmits one buffer via DMA while the other buffer is being expanded to for faster display times on the limited SPI bandwidth
+    - This buffering approach is needed instead of storing the display data in full colour resolution due to memory limitations (only 32KiB of SRAM)
+- **Data Transmission - Colour Driver**
+    - The current background image is bitpacked in memory
+    - On a blit call, the background info is expanded to full colour resolution to the double buffer and the text or image is expanded to a different colour on top of the background within the double buffer
+    - This is because there is not enough memory to store additional colour data in the SRAM, so it must be done while transferring
+- **General Notes**
+    - Images are stored with specialized RLE compression in flash
+    - The fontmap is bitpacked in flash
+    - Pixels are stored LSB first
+    - A lookup table is used to expand the bitpacked bytes into full colour resolution
+    - Other tables are also used throughout the code. For more detail see the scripts section on how to generate customized tables
 
-# RLE Compression
+# Naming Conventions
+- Types are named in PascalCase with a _t suffix to indiciate that it is a type
+- Variables are named in camelCase, and if they have units there will be a _unit suffix, eg:
+    - count_p for pixels
+    - count_b for bytes
+    - etc
+- Static/inline functions are named in camelCase
+- Driver functions are named in PascalCase with a ILI9488_ prefix
+- Constants/macros are named in all caps CAMEL_CASE
+
+# Specialized RLE Compression
 - Sequence begins with number of OFF bits in a row, then alternates between contiguous ON and OFF bits in a row in this form:
     - **OFF, ON, OFF, ON**
 - Examples
@@ -61,12 +87,12 @@ $ python BMP_parser.py <input file> <output directory> -f -cw <character width i
 ```
 
 # Lookup table generation
-- Use the [generate_lookup_table](scripts/generate_lookup_table.py) script to generate a lookup table from the specified on and off colours
+- Use the [generate_lookup_table](scripts/generate_lookup_table.py) script to generate a lookup table to expand bitpacked bytes into full colour resolution from the specified on and off colours
 ```bash
 $ python generate_lookup.py <on colour in R B G> <off colour in R B G>
 ```
 # Object table generation
-- Use the [modified_CreateTableFiles](scripts/modified_CreateTableFiles.py) script to generate the object table. All parameters are tweakable from within the file. 
+- Use the [generate_object_table](scripts/generate_object_table) script to generate the object table. All parameters are tweakable from within the file. 
 ```bash
 $ python modified_CreateTableFiles.py
 ```

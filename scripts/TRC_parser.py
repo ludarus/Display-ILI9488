@@ -1,4 +1,9 @@
-# will parse a trc file found in logs/ and output the according can messages
+# TRC_parser.py
+# Luke Fadel 2026
+
+# script to parse a .trc CAN trace file and emulate it to a USB can device
+# .trc files can be found in logs
+
 import can
 import time
 from datetime import datetime
@@ -7,6 +12,7 @@ import os
 import sys
 
 
+# dataclass to store can message info
 class CAN_message:
     # constructor
     def __init__(
@@ -80,6 +86,11 @@ def send_messages(messages: list[CAN_message]) -> None:
 
     bus = can.interface.Bus(channel="can0", interface="socketcan")
 
+
+    # sending all other messages
+    # to stress test, put this segment in a while true loop
+    # while True:
+
     # first message
     bus.send(
         can.Message(
@@ -88,22 +99,22 @@ def send_messages(messages: list[CAN_message]) -> None:
             data=messages[0].data,
         )
     )
-
-    # sending all other messages
-    # stress testing
-    # while True:
+    # rest of messages
     for msgIdx in range(1, len(messages)):
-
         # waiting the specified delay. will have some small time drift but its fine for this application
         time.sleep((messages[msgIdx].time - messages[msgIdx - 1].time) / 1000.0)
 
         match messages[msgIdx].id:
             case 0x428:
                 # image
+
+                # printing timestamp for testing purposes
                 print(f"{datetime.now().strftime('%H:%M:%S.%f')[:-3]} | ", end="")
                 print(f"sending image {messages[msgIdx].data}")
             case 0x420:
                 # text
+
+                # printing timestamp for testing purposes
                 print(f"{datetime.now().strftime('%H:%M:%S.%f')[:-3]} | ", end="")
                 print(f"sending text {messages[msgIdx].data}")
             case _:

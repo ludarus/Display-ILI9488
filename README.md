@@ -81,13 +81,15 @@ $ python BMP_parser.py <input file> <output directory>
 $ python BMP_parser.py <input file> <output directory> -d
 ```
 
-**Font usage**
+**Fontmap usage**
 ```bash
 $ python BMP_parser.py <input file> <output directory> -f -cw <character width in px>
 ```
-
 # Lookup table generation
 - Use the [generate_lookup_table](scripts/generate_lookup_table.py) script to generate a lookup table to expand bitpacked bytes into full colour resolution from the specified on and off colours
+- Input specification: 
+    - On/off colour = (**R** << 2) + (**B** << 1) + **G**, where **R** **G** and **B** are bits
+
 ```bash
 $ python generate_lookup.py <on colour in R B G> <off colour in R B G>
 ```

@@ -2,7 +2,7 @@
  * alarm.h
  *
  *  Created on: Jul 6, 2026
- *      Author: joe
+ *      Author: Luke Fadel
  */
 
 #ifndef INC_ALARM_H_
@@ -17,6 +17,7 @@ void ALARM_Disable(TIM_HandleTypeDef *alarmTimer);
 void ALARM_StartBeep(TIM_HandleTypeDef *alarmTimer);
 void ALARM_StopBeep(TIM_HandleTypeDef *alarmTimer);
 
+// struct to store the prescaler and arr values for changing frequencies
 typedef struct {
   uint16_t psc;
   uint16_t arr;

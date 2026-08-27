@@ -1,6 +1,11 @@
-# use this to compress the images contained in the .bin files.
+# generate_object_table.py
+# Luke Fadel 2026
+
+# Script to parse the image metadata contained in the tables/tableobj2.bin file
 # Files excluded from the compression are of ObjType 0x0d and 0x04 which are table types
 # 0x0d - object table, 0x04 group tables.
+
+# note: object 2 is the font map, which is why it's size is bigger than normal
 
 import os
 
@@ -13,11 +18,9 @@ import os
 # Type 9    = flag? or something
 
 # defining constants for scaling
-OLD_WIDTH = 160
-
 # original display = 160x80
+OLD_WIDTH = 160
 OLD_HEIGHT = 80
-# object 2 is the font map
 
 NEW_WIDTH = 480
 NEW_HEIGHT = 320
@@ -47,6 +50,7 @@ class Object:
         objSize: int,
         imgReference: str,
         flashImgReference: str,
+        # default colour for coloured variant is yellow
         colour: str = "COLOR_YELLOW",
     ):
         self.objNum = objNum
@@ -236,11 +240,11 @@ images: list[str] = [
     "&File_079_ObjNum_149_480x320_6_17_26",
 ]
 
-# map of flash location to the first object that is stored there
+# map of flash location to the first object that is stored there to manage multiple objects with same referenced memory location
 flashMap = {}
 
 
-def table2Array() -> list[Object]:
+def tableToArray() -> list[Object]:
     """read in the tables .bin from the original EL Raymond project
     read the tables.bin file into an array."""
 
@@ -259,26 +263,37 @@ def table2Array() -> list[Object]:
         for i in range(NumObjs):
             lsb = in_file.read(1)
             msb = in_file.read(1)
+
             msb = msb[0]
             lsb = lsb[0]
             msb = msb * 256
+
             objNum = lsb + msb
+
             objType = in_file.read(1)
             objType = objType[0]
+
             xLoc = in_file.read(1)
             xLoc = xLoc[0]
+
             yLoc = in_file.read(1)
             yLoc = yLoc[0]
+
             xDim = in_file.read(1)
             xDim = xDim[0]
+
             yDim = in_file.read(1)
             yDim = yDim[0]
+
             datatype = in_file.read(1)
             datatype = datatype[0]
+
             lsb = in_file.read(1)
             msb = in_file.read(1)
+
             msb = msb[0]
             lsb = lsb[0]
+
             flashloc = lsb + (msb * 256)
 
             # assigning current object to flash location
@@ -287,10 +302,12 @@ def table2Array() -> list[Object]:
 
             lsb = in_file.read(1)
             msb = in_file.read(1)
+
             msb = msb[0]
             lsb = lsb[0]
             objsize = lsb + (msb * 256)
 
+            # creating an object object with the parsed information and adding it to object list
             ObjList.append(
                 Object(
                     objNum,
@@ -366,7 +383,6 @@ def convertToNewScreen(objList: list[Object]) -> list[Object]:
                 obj.objType = "TEXT_OBJ_TYPE"
 
                 obj.xLocation *= 8 * SCALING_WIDTH
-                # Text seems to be slightly out of bounds on y, so scaling this back a little bit
                 obj.yLocation *= SCALING_HEIGHT
 
                 # chopped off pixels from the font bitmap
@@ -388,7 +404,7 @@ def convertToNewScreen(objList: list[Object]) -> list[Object]:
         obj.xDimension = int(obj.xDimension)
         obj.yDimension = int(obj.yDimension)
 
-        # out of bounds check - only triggers for object 2 which is special for some reason
+        # out of bounds check - only triggers for object 2 because it's the fontmap and stored differently
         if (
             obj.xLocation + obj.xDimension > NEW_WIDTH
             or obj.yLocation + obj.yDimension > NEW_HEIGHT
@@ -419,9 +435,9 @@ def generateArray(modifiedObjlist: list[Object]) -> list[str]:
     return "\n".join(lines)
 
 
-#  ***********************************************************************************************
+# ******************************** main ********************************
 
-baseList = table2Array()
+baseList = tableToArray()
 modifiedList = convertToNewScreen(baseList)
 cArray = generateArray(modifiedList)
 

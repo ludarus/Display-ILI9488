@@ -1,6 +1,5 @@
 /*
- * display.c
- *
+ * display-ili9488.c
  */
 
 #include "display-ili9488.h"
@@ -805,8 +804,8 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
                                     bool overWrite) {
   if (state.drawStatus == DS_NONE) {
     // checking to make sure the image is in bounds:
-    if (x_p + image->width > ILI9488_WIDTH_PX ||
-        y_p + image->height > ILI9488_HEIGHT_PX) {
+    if (x_p + image->width_p > ILI9488_WIDTH_PX ||
+        y_p + image->height_p > ILI9488_HEIGHT_PX) {
       return HAL_ERROR;
     }
 
@@ -816,8 +815,8 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
     // copying state variables for compiler optimization (pointer aliasing)
     uint16_t col_p = 0;                                       // in pixels
     uint32_t pos_p = (ILI9488_WIDTH_PX * y_p) + x_p;          // in pixels
-    const uint16_t imgWidth_p = image->width;                 // in pixels
-    const uint16_t imgHeight_p = image->height;               // in pixels
+    const uint16_t imgWidth_p = image->width_p;                 // in pixels
+    const uint16_t imgHeight_p = image->height_p;               // in pixels
     const uint16_t rowSkip_p = ILI9488_WIDTH_PX - imgWidth_p; // in pixels
     const uint8_t *imgData = image->data;
     uint8_t *screenData = state.screenCopy;
@@ -979,7 +978,7 @@ HAL_StatusTypeDef ILI9488_SetBackground(SPI_HandleTypeDef *spi,
                                         const Image_t *bg) {
 
   // making sure requested image is full screen
-  if (bg->height != 320 || bg->width != 480) {
+  if (bg->height_p != 320 || bg->width_p != 480) {
     return HAL_ERROR;
   }
 
@@ -1086,7 +1085,7 @@ BrightnessInfo_t ILI9488_Init(SPI_HandleTypeDef *spi,
   //                       0x46, 0x04, 0x0E, 0x0D, 0x35, 0x37, 0x0F};
   uint8_t ngamma[15] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
                         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-  // ILI9488_Data(spi, &ngamma[0], 15);
+  ILI9488_Data(spi, &ngamma[0], 15);
 
   // VCOM value for more display tweaks
   ILI9488_Cmd(spi, DCMD_VMCTRL);

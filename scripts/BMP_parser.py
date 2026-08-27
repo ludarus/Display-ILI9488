@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+# BMP_parser.py
+# Luke Fadel 2026
+
+# This script converts 1bpp monochrome .bmp files into:
+# - RLE compressed C header files for images
+# - bitpack compressed C header file for fontmap
+# Proper usage is detailed in the README, and running this script with a -h flag
+
 # imports for commandline argument parsing, file access, etc
 import argparse
 import sys
@@ -220,6 +228,7 @@ def generate_image_header(
     total_bytes = len(data)
 
     lines = []
+    # writing start of headaer file
     lines.append(f"#ifndef {guard}")
     lines.append(f"#define {guard}")
     lines.append("")
@@ -239,6 +248,7 @@ def generate_image_header(
     lines.append(" * Pixel 0,0 is top-left.")
     lines.append(" */")
     lines.append("")
+    # writing image array
     lines.append(f"static const uint8_t {var_name}_DATA[{len(data)}U] = {{")
     for value in data:
         hex_str = f"0x{value:02X}"
@@ -334,10 +344,11 @@ def main():
         help="width of each character in the monospaced font (required with -f)",
     )
     parser.add_argument(
+        # this argument is not used in the final code, only for testing
         "-bp",
         "--bitpack",
         action="store_true",
-        help="use run length encoding instead of bit packing to compress the image",
+        help="NOTE: UNUSED IN FINAL CODE | use run length encoding instead of bit packing to compress the image",
     )
     parser.add_argument(
         "-p",
@@ -470,6 +481,7 @@ def main():
                 print(
                     f"successfully converted {count} files in {os.path.dirname(args.input)}"
                 )
+                # quality of life statements
                 print("include statement: \n" + "\n".join(includes))
                 print("images array: \n" + "\n".join(images_array))
                 print(f"total size: {total_size}B")

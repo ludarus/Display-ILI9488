@@ -47,7 +47,7 @@ extern "C" {
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 
-// macro to check the status of a function
+// macro that returns thrown error code if executed function isn't HAL_OK
 #define HAL_TRY(x)                                                             \
   do {                                                                         \
     HAL_StatusTypeDef _s = (x);                                                \
@@ -55,7 +55,7 @@ extern "C" {
       return _s;                                                               \
   } while (0)
 
-// spinning macro (can be dangerous)
+// spinning macro to wait until a function isn't busy and execute it
 #define HAL_SPIN(x)                                                            \
   while (x == HAL_BUSY) {                                                      \
   }

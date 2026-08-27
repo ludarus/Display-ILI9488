@@ -9,42 +9,46 @@
 #include "File_005_ObjNum_004_480x320_6_18_26.h"
 #include "SYSFAIL_480x320.h"
 #include "alarm.h"
+#include "commands-can.h"
 #include "display-ili9488.h"
 #include "stm32f0xx_hal.h"
 #include "tables.h"
 #include <stdio.h>
 
-// TODO get correct version string
-const uint8_t version[8] = "DSP12345";
+//--------------------------------------------------------------------------------
+// global variables
 
-// debugging ---
-// overflow flag
-volatile static bool overFlowed = false;
-// debugging ---
+const uint8_t version[8] = "DSP12345";
 
 // private declarations
 
 // tracking the number of messages in the queue and the amount of messages being
 // processed in the main loop
+// circular head and tail approach
 static volatile uint8_t writeIdx = 0; // next slot the interrupt will write to
 static volatile uint8_t readIdx = 0;  // next slot the main loop will read
-// CAN message queue
-#define QUEUE_SIZE 64
+
+// Queued CAN messages buffer
 static CanRxMessage_t queue[QUEUE_SIZE];
-// static brightness members (shared state)
-#define BRIGHTNESS_TABLE_SIZE 40
+
+// brightness shared state members
+
+// tick of last brightness change
 static uint32_t brightnessTick;
+// index for brightnessTable
 static uint8_t brightnessIdx;
+// index in flash where previous brightness index was stored
 static uint8_t prevBrightnessIdx;
+// index in flash where brightness index is stored
 static uint16_t flashOffset;
 
-// alarm members
-static volatile uint32_t alarmTick;
+// tick to track beep state
+static volatile uint32_t beepTick;
 
-// for error
+// tick to track when last CAN message was recieved
 static volatile uint32_t lastMsgTick = 1;
 
-// for serial diagnostics
+// for serial logging and diagnostics
 static uint8_t diagnosticMsg[64];
 
 // interfaces
@@ -54,9 +58,9 @@ static UART_HandleTypeDef *uart;
 static TIM_HandleTypeDef *alarmTimer;
 static TIM_HandleTypeDef *backlightTimer;
 
-// private functions
+//--------------------------------------------------------------------------------
+// private handles 
 
-// handles. TODO finish them when given the objnum and groupnum to image mapping
 HAL_StatusTypeDef CMD_DispBg(CanRxMessage_t *msg) {
   // cmdNum = 0x83
   // id = 0x418
@@ -165,9 +169,6 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
     //                        "Disp text: \"%.*s\", objNum = %u\n", target,
     //                        charArray, objNum);
 
-    // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-    //                        "\"%.*s\", %u\n", target, charArray, objNum);
-    //
     // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
     // restting target
@@ -220,7 +221,8 @@ HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
 
   // diagnostic logging
   // uint8_t len =
-  //     snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg), "i %u\n", objNum);
+  //     snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg), "i %u\n",
+  //     objNum);
   //
   // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
@@ -318,7 +320,7 @@ HAL_StatusTypeDef CMD_Brightness(CanRxMessage_t *msg) {
     if (brightnessIdx == 0) {
       // start beep
       ALARM_StartBeep(alarmTimer);
-      alarmTick = thisTick;
+      beepTick = thisTick;
     } else {
       brightnessIdx--;
     }
@@ -328,7 +330,7 @@ HAL_StatusTypeDef CMD_Brightness(CanRxMessage_t *msg) {
     if (brightnessIdx == BRIGHTNESS_TABLE_SIZE - 1) {
       // start beep
       ALARM_StartBeep(alarmTimer);
-      alarmTick = thisTick;
+      beepTick = thisTick;
     } else {
       brightnessIdx++;
     }
@@ -372,9 +374,8 @@ HAL_StatusTypeDef CMD_Alarm(CanRxMessage_t *msg) {
   return HAL_OK;
 }
 
-// list of commands to be received
-// const uncommented for debugging logs
-static /*const*/ CanCommand_t commands[] = {
+// list of commands 
+static CanCommand_t commands[] = {
 
     // display background image
     // 0x418
@@ -409,6 +410,7 @@ static /*const*/ CanCommand_t commands[] = {
     {.cmdNum = 0x8A, .handle = CMD_Alarm},
 };
 
+//--------------------------------------------------------------------------------
 // public functions
 
 HAL_StatusTypeDef
@@ -564,7 +566,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
 #if COLOUR_ENABLED
                                ,
                                // COLOR_RED
-										 COLOR_YELLOW
+                               COLOR_YELLOW
 #endif
 
                                ));
@@ -573,14 +575,14 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
   }
 
   // if the alarm has been on for 100 ms
-  if (currentTick - alarmTick >= 100 && alarmTick != 0) {
+  if (currentTick - beepTick >= 100 && beepTick != 0) {
 
     // HAL_UART_Transmit_IT(uart, (uint8_t *)"Brightness beep completed\n",
     // 26);
 
     ALARM_StopBeep(alarmTimer);
 
-    alarmTick = 0;
+    beepTick = 0;
   }
 
   // if it's been 5 seconds since last brightness change
@@ -663,9 +665,6 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
       // executing command
       commands[cmdNum - commands[0].cmdNum].handle(msg);
 
-      // incrementing call log
-      // commands[cmdNum - commands[0].cmdNum].numberOfTimesCalled++;
-
     } else {
       // if no commands match
       readIdx = (readIdx + 1) & (QUEUE_SIZE - 1);
@@ -678,6 +677,9 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
   return HAL_OK;
 }
 
+//--------------------------------------------------------------------------------
+// Interrupts/callbacks
+
 // callback for received message
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
   // setting last tick
@@ -689,11 +691,10 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 
   // when the write idx has almost "lapped" the read index
   if (nextWriteIdx == readIdx) {
-    // on queue overflow - write message to junk buffer to discard it
+    // ON QUEUE OVERFLOW - write message to junk buffer to discard it
     CAN_RxHeaderTypeDef hdr;
     uint8_t data[8];
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &hdr, data);
-    overFlowed = true;
   } else {
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &queue[writeIdx].header,
                          queue[writeIdx].data);
@@ -703,7 +704,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
   writeIdx = nextWriteIdx;
 }
 
-// callback for junk messages to check if network is still active
+// callback for junk/heartbeat messages to check if network is still active
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan) {
   // setting last tick
   lastMsgTick = HAL_GetTick();

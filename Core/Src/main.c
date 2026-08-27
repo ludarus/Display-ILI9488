@@ -26,12 +26,10 @@
 #include "alarm.h"
 #include "commands-can.h"
 #include "display-ili9488.h"
-#include "font.h"
 #include "stm32f0xx_hal.h"
-#include "stm32f0xx_hal_iwdg.h"
+#include "stm32f0xx_hal_def.h"
 #include "stm32f0xx_hal_uart.h"
 #include "switches.h"
-#include "tables.h"
 
 #include <stdio.h>
 
@@ -130,12 +128,14 @@ int main(void) {
   MX_TIM17_Init();
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
+  // logging message
   HAL_UART_Transmit_IT(&huart2,
                        (uint8_t *)"Configured peripherals, system clock, and "
                                   "HAL layer initialized\n",
                        64);
 
   // initializing watchdog to 26s for init sequence
+  // watchdog clock is 40kHz
   hiwdg.Init.Prescaler = IWDG_PRESCALER_256;
   hiwdg.Init.Reload = 4095;
   HAL_IWDG_Init(&hiwdg);
@@ -143,33 +143,39 @@ int main(void) {
   // starting alarm pwm timer
   HAL_TIM_PWM_Start(&htim14, TIM_CHANNEL_1);
 
+  // turn off alarm
   ALARM_Disable(&htim14);
 
-  HAL_SPIN(HAL_UART_Transmit_IT(&huart2, (uint8_t *)"Alarm PWM timer started\n",
-                                25));
+  // logging message
+  HAL_UART_Transmit(&huart2, (uint8_t *)"Alarm PWM timer started\n", 25,
+                    HAL_MAX_DELAY);
 
-  // initializing display
+  // initializing display, and passing brightness settings to CAN init function
   BrightnessInfo_t brightnessSettings = ILI9488_Init(&hspi1, &htim17);
 
-  HAL_SPIN(
-      HAL_UART_Transmit_IT(&huart2, (uint8_t *)"Display initialized\n", 20));
+  // logging message
+  HAL_UART_Transmit(&huart2, (uint8_t *)"Display initialized\n", 20,
+                    HAL_MAX_DELAY);
 
   // initializing can interface
   CAN_CMDS_Init(&hcan, &hspi1, &huart2, &htim14, &htim17, brightnessSettings,
                 BAUD_INPUT1_GPIO_Port, BAUD_INPUT1_Pin, BAUD_INPUT2_GPIO_Port,
                 BAUD_INPUT2_Pin, BAUD_INPUT3_GPIO_Port, BAUD_INPUT3_Pin);
 
-  HAL_SPIN(HAL_UART_Transmit_IT(&huart2,
-                                (uint8_t *)"CAN protocol initialized\n", 25));
+  // logging message
+  HAL_UART_Transmit(&huart2, (uint8_t *)"CAN protocol initialized\n", 25,
+                    HAL_MAX_DELAY);
 
-  // starting timer for switches interrupt
+  // starting timer for switches interrupt (every 100ms)
   HAL_TIM_Base_Start_IT(&htim2);
 
-  HAL_SPIN(HAL_UART_Transmit_IT(&huart2,
-                                (uint8_t *)"Switches interrupt enabled\n", 27));
+  HAL_UART_Transmit(&huart2, (uint8_t *)"Switches interrupt enabled\n", 27,
+                    HAL_MAX_DELAY);
 
-  HAL_SPIN(HAL_UART_Transmit_IT(
-      &huart2, (uint8_t *)"Successfully initialized all interfaces\n", 40));
+  // final logging message
+  HAL_UART_Transmit(&huart2,
+                    (uint8_t *)"Successfully initialized all interfaces\n", 40,
+                    HAL_MAX_DELAY);
 
   // --- debugging --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
@@ -224,49 +230,53 @@ int main(void) {
   //                             ));
   //   HAL_Delay(1000);
 
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5, "RED", 3, false
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5, (uint8_t *)"RED", 3, false
 #if COLOUR_ENABLED
                             ,
                             COLOR_RED
 #endif
                             ));
 
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 1), "GREEN", 5, false
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 1), (uint8_t *)"GREEN", 5,
+                            false
 #if COLOUR_ENABLED
                             ,
                             COLOR_GREEN
 #endif
                             ));
 
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 2), "BLUE", 4, false
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 2), (uint8_t *)"BLUE", 4, false
 #if COLOUR_ENABLED
                             ,
                             COLOR_BLUE
 #endif
                             ));
 
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 3), "YELLOW", 6, false
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 3), (uint8_t *)"YELLOW", 6,
+                            false
 #if COLOUR_ENABLED
                             ,
                             COLOR_YELLOW
 #endif
                             ));
 
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 4), "CYAN", 4, false
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 4), (uint8_t *)"CYAN", 4, false
 #if COLOUR_ENABLED
                             ,
                             COLOR_CYAN
 #endif
                             ));
 
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 5), "PURPLE", 6, false
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 5), (uint8_t *)"PURPLE", 6,
+                            false
 #if COLOUR_ENABLED
                             ,
                             COLOR_PURPLE
 #endif
                             ));
 
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), "WHITE", 5, false
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), (uint8_t *)"WHITE", 5,
+                            false
 #if COLOUR_ENABLED
                             ,
                             COLOR_WHITE

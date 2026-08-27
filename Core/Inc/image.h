@@ -10,20 +10,16 @@
 
 #include <stdint.h>
 
+// struct to store image data
 typedef struct {
+  // width of image in pixels
   const uint16_t width;
+  // height of image in pixels
   const uint16_t height;
-  // rle encoded string of data
+  // rle encoded string of RLE compressed data
   const uint8_t *data;
+  // size of RLE compressed image in bytes
   const uint32_t size;
 } Image_t;
-
-// size = 19200 bytes
-// width = 480 px
-// height = 320 px
-// Bitpack compression
-typedef struct {
-  const uint8_t *data;
-} Background_t;
 
 #endif /* INC_IMAGE_H_ */

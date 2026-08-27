@@ -1,16 +1,22 @@
-# generates a parameterized list of CAN messages to send
+# stress_test_generator.py
+# Luke Fadel 2026
+
+# script to stress test, purposely overflow and stall the display via usb CAN messages
+# stress testing parameters are tweakable at the bottom of this file
+
 
 import can
 import time
-import argparse
-import os
-import sys
 import random
 
+# constants
 DISPLAY_WIDTH = 480
 CHAR_WIDTH = 32
 FONT_SIZE = 96
 
+
+# lists of object numbers for each type
+# output of generate_object_table.py
 
 # using tuples for immutability
 # background objNums
@@ -42,6 +48,7 @@ textIds = (
     (146, 96),
 )
 
+# image objNums
 imageIds = (
     2,
     7,
@@ -160,6 +167,7 @@ imageIds = (
     145,
 )
 
+# group objNums
 groupIds = (95, 96)
 
 
@@ -171,6 +179,7 @@ class CanMsg:
         # 8 entry
         self.data = data
 
+    # return self string override
     def __repr__(self):
         return f"""
 id = 0x{self.id:X},
@@ -193,6 +202,7 @@ class MsgGenerator:
 
         return [CanMsg(random.randint(0, 2047), currentTime + self.interval, data)]
 
+    # returns list of messages with correct timestamps
     def createList(self) -> list[CanMsg]:
         msgList: list[CanMsg] = []
         for i in range(self.count):
@@ -219,6 +229,7 @@ class TextGenerator(MsgGenerator):
     def createData(self, currentTime: int) -> list[CanMsg]:
         idx = random.randint(0, len(textIds) - 1)
 
+        # select max number of chars for current objNum by using x value
         numberOfChars = (480 - textIds[idx][1]) // CHAR_WIDTH
         print("num of chars = ", numberOfChars)
         objNum = textIds[idx][0]
@@ -354,6 +365,7 @@ def send_messages(messages: list[CanMsg]):
 
 messages = combine_generators(
     [  # List of generators. Probably make some of the intervals prime
+        # parameters: Generator(interval, number of messages)
         # MsgGenerator(1, 16000),
         BackgroundGenerator(10, 1000),
         ImageGenerator(13, 878),
@@ -365,4 +377,5 @@ messages = combine_generators(
     ]
 )
 
+# sending messages
 send_messages(messages)

@@ -8,7 +8,9 @@
 #include "switches.h"
 #include "main.h"
 
+// global array to track switch state
 // arrays 1-3 are for the last 3 states, array 4 is for the debounced state
+// current index pointer loops circularly through arrays 1-3
 static uint8_t switchState[4][5];
 static uint8_t currentIdx;
 static volatile uint8_t flag;
@@ -22,9 +24,10 @@ HAL_StatusTypeDef SWITCHES_Process(CAN_HandleTypeDef *canInterface) {
   switchState[currentIdx][3] = HAL_GPIO_ReadPin(SWITCH4_GPIO_Port, SWITCH4_Pin);
   switchState[currentIdx][4] = HAL_GPIO_ReadPin(SWITCH5_GPIO_Port, SWITCH5_Pin);
 
-  // incrementing index
+  // incrementing circular index
   currentIdx = (currentIdx + 1) % 3;
 
+  // if 100ms has elapsed
   if (flag) {
     uint8_t debouncedState = 0;
 
@@ -36,23 +39,22 @@ HAL_StatusTypeDef SWITCHES_Process(CAN_HandleTypeDef *canInterface) {
                                ? switchState[0][sw]
                                : switchState[3][sw];
 
-      // packing payload
+      // packing payload into specified format to send
       debouncedState |= switchState[3][sw] << sw;
     }
 
     // transmitting debounced state
     CAN_TxHeaderTypeDef header = {0};
 
-    // 1 bytes of data, 1 bit per switch
+    // 1 byte of data, 1 bit per switch
     header.DLC = 1;
 
     // as specified in protocol
     header.StdId = 0x140;
 
+    // can msg settings
     header.IDE = CAN_ID_STD;
     header.RTR = CAN_RTR_DATA;
-
-    // TODO: confirm this
     header.TransmitGlobalTime = DISABLE;
 
     uint32_t mailbox;
@@ -67,7 +69,7 @@ HAL_StatusTypeDef SWITCHES_Process(CAN_HandleTypeDef *canInterface) {
   return HAL_OK;
 }
 
-// interrupt
+// on interrupt, set flag to send switches (every 100ms)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   if (htim->Instance == TIM2) {
     // setting flag

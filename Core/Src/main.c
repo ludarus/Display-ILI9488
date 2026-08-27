@@ -27,8 +27,13 @@
 #include "commands-can.h"
 #include "display-ili9488.h"
 #include "font.h"
+#include "stm32f0xx_hal.h"
+#include "stm32f0xx_hal_iwdg.h"
+#include "stm32f0xx_hal_uart.h"
 #include "switches.h"
 #include "tables.h"
+
+#include <stdio.h>
 
 // image includes
 
@@ -51,6 +56,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan;
+
+IWDG_HandleTypeDef hiwdg;
 
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;
@@ -76,6 +83,7 @@ static void MX_CAN_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM14_Init(void);
 static void MX_TIM17_Init(void);
+static void MX_IWDG_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -120,11 +128,17 @@ int main(void) {
   MX_TIM2_Init();
   MX_TIM14_Init();
   MX_TIM17_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
   HAL_UART_Transmit_IT(&huart2,
                        (uint8_t *)"Configured peripherals, system clock, and "
                                   "HAL layer initialized\n",
                        64);
+
+  // initializing watchdog to 26s for init sequence
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_256;
+  hiwdg.Init.Reload = 4095;
+  HAL_IWDG_Init(&hiwdg);
 
   // starting alarm pwm timer
   HAL_TIM_PWM_Start(&htim14, TIM_CHANNEL_1);
@@ -159,58 +173,112 @@ int main(void) {
 
   // --- debugging --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
-  for (uint16_t i = 0; i < 149; i++) {
-    if (objects[i].type == BACKGROUND_OBJ_TYPE) {
-      HAL_SPIN(ILI9488_SetBackground(&hspi1, objects[i].img));
-    }
-  }
+  //   for (uint16_t i = 0; i < 149; i++) {
+  //     if (objects[i].type == BACKGROUND_OBJ_TYPE) {
+  //       HAL_SPIN(ILI9488_SetBackground(&hspi1, objects[i].img));
+  //     }
+  //   }
+  //
+  //   HAL_SPIN(ILI9488_SetBackground(&hspi1,
+  //   &File_072_ObjNum_135_480x320_6_18_26));
+  //
+  //   HAL_SPIN(
+  //       ILI9488_SetBackground(&hspi1,
+  //       &File_006_ObjNum_005_480x320_6_18_26_C));
+  //
+  //   // loading all smaller images to test placement
+  //   for (int i = 0; i < 149; i++) {
+  //     if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
+  //         objects[i].img->width != ILI9488_WIDTH_PX) {
+  //       HAL_SPIN(ILI9488_BlitImage(&hspi1, objects[i].x, objects[i].y,
+  //                                  objects[i].img, false
+  // #if COLOUR_ENABLED
+  //                                  ,
+  //                                  objects[i].colour
+  //       // COLOR_YELLOW
+  // #endif
+  //                                  ));
+  //     }
+  //   }
+  //
+  //   // loading all text to test placement
+  //   for (int i = 0; i < 149; i++) {
+  //     if (objects[i].type == TEXT_OBJ_TYPE) {
+  //       HAL_SPIN(ILI9488_BlitText(
+  //           &hspi1, objects[i].x, objects[i].y, "123456789012345",
+  //           (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH, false
+  // #if COLOUR_ENABLED
+  //           ,
+  //           objects[i].colour
+  //       // COLOR_YELLOW
+  // #endif
+  //           ));
+  //     }
+  //   }
+  //
+  //   HAL_SPIN(ILI9488_BlitText(&hspi1, 8, 10, "gggggg lol", 10, true
+  // #if COLOUR_ENABLED
+  //                             ,
+  //                             COLOR_PURPLE
+  // #endif
+  //                             ));
+  //   HAL_Delay(1000);
 
-  HAL_SPIN(ILI9488_SetBackground(&hspi1, &File_072_ObjNum_135_480x320_6_18_26));
-
-  HAL_SPIN(
-      ILI9488_SetBackground(&hspi1, &File_006_ObjNum_005_480x320_6_18_26_C));
-
-  // loading all smaller images to test placement
-  for (int i = 0; i < 149; i++) {
-    if (i != 1 && objects[i].type == IMAGE_OBJ_TYPE &&
-        objects[i].img->width != ILI9488_WIDTH_PX) {
-      HAL_SPIN(ILI9488_BlitImage(&hspi1, objects[i].x, objects[i].y,
-                                 objects[i].img, false
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5, "RED", 3, false
 #if COLOUR_ENABLED
-                                 ,
-                                 // objects[i].colour
-                                 COLOR_YELLOW
+                            ,
+                            COLOR_RED
 #endif
-                                 ));
-      HAL_Delay(30);
-    }
-  }
+                            ));
 
-  HAL_Delay(500);
-
-  // loading all text to test placement
-  for (int i = 0; i < 149; i++) {
-    if (objects[i].type == TEXT_OBJ_TYPE) {
-      HAL_SPIN(ILI9488_BlitText(
-          &hspi1, objects[i].x, objects[i].y, "123456789012345",
-          (ILI9488_WIDTH_PX - objects[i].x) / CHARWIDTH, false
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 1), "GREEN", 5, false
 #if COLOUR_ENABLED
-          ,
-          // objects[i].colour
-          COLOR_YELLOW
+                            ,
+                            COLOR_GREEN
 #endif
-          ));
-      HAL_Delay(30);
-    }
-  }
+                            ));
 
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 8, 10, "gggggg lol", 10, true
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 2), "BLUE", 4, false
+#if COLOUR_ENABLED
+                            ,
+                            COLOR_BLUE
+#endif
+                            ));
+
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 3), "YELLOW", 6, false
 #if COLOUR_ENABLED
                             ,
                             COLOR_YELLOW
 #endif
                             ));
+
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 4), "CYAN", 4, false
+#if COLOUR_ENABLED
+                            ,
+                            COLOR_CYAN
+#endif
+                            ));
+
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 5), "PURPLE", 6, false
+#if COLOUR_ENABLED
+                            ,
+                            COLOR_PURPLE
+#endif
+                            ));
+
+  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), "WHITE", 5, false
+#if COLOUR_ENABLED
+                            ,
+                            COLOR_WHITE
+#endif
+                            ));
   HAL_Delay(1000);
+
+  // updating watchdog to 6.55s for main loop
+  // this value is safe when doing extreme buffer overloading stress testing
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_64;
+  hiwdg.Init.Reload = 4095;
+  HAL_IWDG_Init(&hiwdg); // re-init just updates PR/RLR via 0x5555 unlock
 
   /* USER CODE END 2 */
 
@@ -220,11 +288,15 @@ int main(void) {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    // process recieved can commands
+
+    // process received can commands
     CAN_CMDS_Process();
 
     // processing switch input
     SWITCHES_Process(&hcan);
+
+    // refreshing watchdog
+    HAL_IWDG_Refresh(&hiwdg);
   }
   /* USER CODE END 3 */
 }
@@ -241,8 +313,10 @@ void SystemClock_Config(void) {
   /** Initializes the RCC Oscillators according to the specified parameters
    * in the RCC_OscInitTypeDef structure.
    */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType =
+      RCC_OSCILLATORTYPE_LSI | RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL12;
@@ -301,6 +375,32 @@ static void MX_CAN_Init(void) {
   /* USER CODE BEGIN CAN_Init 2 */
 
   /* USER CODE END CAN_Init 2 */
+}
+
+/**
+ * @brief IWDG Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_IWDG_Init(void) {
+
+  /* USER CODE BEGIN IWDG_Init 0 */
+
+  /* USER CODE END IWDG_Init 0 */
+
+  /* USER CODE BEGIN IWDG_Init 1 */
+
+  /* USER CODE END IWDG_Init 1 */
+  hiwdg.Instance = IWDG;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
+  hiwdg.Init.Window = 4095;
+  hiwdg.Init.Reload = 4095;
+  if (HAL_IWDG_Init(&hiwdg) != HAL_OK) {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN IWDG_Init 2 */
+
+  /* USER CODE END IWDG_Init 2 */
 }
 
 /**

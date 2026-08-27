@@ -355,12 +355,12 @@ def send_messages(messages: list[CanMsg]):
 messages = combine_generators(
     [  # List of generators. Probably make some of the intervals prime
         # MsgGenerator(1, 16000),
-        # BackgroundGenerator(267, 25),
-        # ImageGenerator(37, 1000),
+        BackgroundGenerator(10, 1000),
+        ImageGenerator(13, 878),
         # AlarmGenerator(50, 500),
         # BrightnessGenerator(100, 500),
         # FailureGenerator(1000, 5),
-        # TextGenerator(17, 1000),
+        TextGenerator(7, 1000),
         # VersionGenerator(10, 1000),
     ]
 )

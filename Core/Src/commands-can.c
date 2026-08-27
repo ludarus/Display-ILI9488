@@ -165,10 +165,10 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
     //                        "Disp text: \"%.*s\", objNum = %u\n", target,
     //                        charArray, objNum);
 
-    uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-                           "\"%.*s\", %u\n", target, charArray, objNum);
-
-    HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+    // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+    //                        "\"%.*s\", %u\n", target, charArray, objNum);
+    //
+    // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
     // restting target
     target = 0;
@@ -219,10 +219,10 @@ HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
                              ));
 
   // diagnostic logging
-  uint8_t len =
-      snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg), "i %u\n", objNum);
-
-  HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+  // uint8_t len =
+  //     snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg), "i %u\n", objNum);
+  //
+  // HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
 
   return HAL_OK;
 }
@@ -563,7 +563,8 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
     HAL_SPIN(ILI9488_BlitImage(spi, 0, 0, &SYSFAIL_480x320, true
 #if COLOUR_ENABLED
                                ,
-                               COLOR_RED
+                               // COLOR_RED
+										 COLOR_YELLOW
 #endif
 
                                ));

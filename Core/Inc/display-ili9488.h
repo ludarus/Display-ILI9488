@@ -12,8 +12,16 @@
 #ifndef INC_DISPLAY_ILI9488_H_
 #define INC_DISPLAY_ILI9488_H_
 
+/**/
+
+/* USER CONFIG */
+// ------------------------------------
 // flag to enable or disable colour
-#define COLOUR_ENABLED 1
+#define COLOUR_ENABLED 0
+// ------------------------------------
+/* USER CONFIG */
+
+/**/
 
 // width and height of display in pixels
 #define ILI9488_WIDTH_PX 480
@@ -40,23 +48,27 @@
 #define DS_TEXT 3
 
 // display command enums
-#define DCMD_SWRESET 0x01  // software reset
-#define DCMD_SLPOUT 0x11   // sleep out
-#define DCMD_ADJCTRL3 0xF7 // adjust control 3
-#define DCMD_MADCTL 0x36   // memory access control
-#define DCMD_WRCTRLD 0x53  // write ctrl display value
-#define DCMD_COLMOD 0x3A   // interface pixel format
-#define DCMD_INVON 0x21    // display inversion on
-#define DCMD_DISON 0x29    // display on
-#define DCMD_CASET 0x2A    // column set address
-#define DCMD_PASET 0x2B    // page set address
-#define DCMD_RAMWR 0x2C    // memory write
-#define DCMD_WRDISBV 0x51  // write display brightness value
-#define DCMD_PGAMCTRL 0xE0 // positive gamma control
-#define DCMD_NGAMCTRL 0xE1 // negative gamma control
-#define DCMD_VMCTRL 0xC5   // VCOM control
-#define DCMD_CECTRL1 0xB9  // color enhancement control 1
-#define DCMD_CECTRL2 0xBA  // color enhancement control 2
+#define DCMD_SWRESET 0x01   // software reset
+#define DCMD_SLPOUT 0x11    // sleep out
+#define DCMD_ADJCTRL3 0xF7  // adjust control 3
+#define DCMD_ADJCTRL4 0xF8  // adjust control 4
+#define DCMD_ADJCTRL7 0xFF  // adjust control 7
+#define DCMD_MADCTL 0x36    // memory access control
+#define DCMD_WRCTRLD 0x53   // write ctrl display value
+#define DCMD_COLMOD 0x3A    // interface pixel format
+#define DCMD_INVON 0x21     // display inversion on
+#define DCMD_DISON 0x29     // display on
+#define DCMD_CASET 0x2A     // column set address
+#define DCMD_PASET 0x2B     // page set address
+#define DCMD_RAMWR 0x2C     // memory write
+#define DCMD_WRDISBV 0x51   // write display brightness value
+#define DCMD_PGAMCTRL 0xE0  // positive gamma control
+#define DCMD_NGAMCTRL 0xE1  // negative gamma control
+#define DCMD_VMCTRL 0xC5    // VCOM control
+#define DCMD_CECTRL1 0xB9   // color enhancement control 1
+#define DCMD_CECTRL2 0xBA   // color enhancement control 2
+#define DCMD_DGAMCTRL1 0xE2 // digital gamma control 1
+#define DCMD_DGAMCTRL2 0xE3 // digital gamma control 1
 
 // colour enums
 #define COLOR_BLACK (uint8_t)0b00000000
@@ -64,9 +76,9 @@
 #define COLOR_RED (uint8_t)0b00100100
 #define COLOR_GREEN (uint8_t)0b00010010
 #define COLOR_BLUE (uint8_t)0b00001001
-#define COLOR_PURPLE (uint8_t)0b0010USB to CAN adapter to emulate the log files you sent me. If you have an actual CAN hub that would probably work better. The baud defaults to 128 kb, and if you connect a grounded jumper to one of the CAN input pins, it will select a higher baud rate instead: 250kb1101
+#define COLOR_PURPLE (uint8_t)0b00101101
 #define COLOR_CYAN (uint8_t)0b00011011
-#define COLOR_YELLOW (uint8_t)0b00110100
+#define COLOR_YELLOW (uint8_t)0b00110110
 
 typedef struct {
   uint16_t flashOffset;

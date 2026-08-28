@@ -1,7 +1,7 @@
 /*
  * display-ili9488.h
  *
- *  Created on: 24 Aug 2026
+ *  Created on: 17 Jun 2026
  *      Author: Luke Fadel
  */
 
@@ -14,12 +14,12 @@
 
 /**/
 
-/* USER CONFIG */
+/* CONFIG */
 // ------------------------------------
 // flag to enable or disable colour
 #define COLOUR_ENABLED 0
 // ------------------------------------
-/* USER CONFIG */
+/* CONFIG */
 
 /**/
 
@@ -27,6 +27,7 @@
 #define ILI9488_WIDTH_PX 480
 #define ILI9488_HEIGHT_PX 320
 
+// width of display in bytes
 #define ILI9488_WIDTH_BYTES (ILI9488_WIDTH_PX / 8)
 
 // size of page in flash
@@ -34,11 +35,19 @@
 // 2048 bytes
 #define FLASH_PAGE_SIZE 0x800U
 
-// the address that contains the first value in the last page of flash
+// the address that contains the first value in the last page of flash,
+// used to store brightness values
 #define BRIGHTNESS_PAGE_ADDR 0x0803F800
 
+// brightness table size
+#define BRIGHTNESS_TABLE_SIZE 40
+// default brightness index (out of BRIGHTNESS_TABLE_SIZE)
+#define DEFAULT_BRIGHTNESS_INDEX 29
+
 // the size in bytes of the SPI transmission buffers
+// chunk is in expanded bytes, 2px = 1eb
 #define CHUNK 2048
+// number of pixels that can be stored in a chunk
 #define PX_PER_CHUNK (CHUNK / 4)
 
 // draw state enums (DS = draw status)
@@ -47,7 +56,7 @@
 #define DS_IMG 2
 #define DS_TEXT 3
 
-// display command enums
+// display command enums (DCMD = display command)
 #define DCMD_SWRESET 0x01   // software reset
 #define DCMD_SLPOUT 0x11    // sleep out
 #define DCMD_ADJCTRL3 0xF7  // adjust control 3
@@ -80,12 +89,14 @@
 #define COLOR_CYAN (uint8_t)0b00011011
 #define COLOR_YELLOW (uint8_t)0b00110110
 
+// struct to store location of brightness index in flash
 typedef struct {
   uint16_t flashOffset;
   uint8_t prevBrightnessIdx;
 } BrightnessInfo_t;
 
 // public driver functions
+
 HAL_StatusTypeDef ILI9488_SetBrightness(SPI_HandleTypeDef *spi,
                                         TIM_HandleTypeDef *tim, uint8_t idx);
 HAL_StatusTypeDef ILI9488_SetBackground(SPI_HandleTypeDef *spi,
@@ -95,8 +106,7 @@ BrightnessInfo_t ILI9488_Init(SPI_HandleTypeDef *spi,
 
 #if COLOUR_ENABLED
 
-// chunk is in expanded bytes, 2px = 1eb
-// struct to store the current state of object rendering,
+// struct to store the current state of object rendering for coloured mode,
 typedef struct {
   // drawing state
   volatile uint8_t drawStatus;
@@ -157,9 +167,8 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
 
 #else
 
-// struct to store the current state of image rendering,
+// struct to store the current state of image rendering for monochrome,
 // as drawing happens between functions and callbacks so shared state is needed
-// Reordered for optimal cache utilization and memory efficiency by claude
 typedef struct {
   // drawing state
   volatile uint8_t drawStatus;
@@ -167,19 +176,20 @@ typedef struct {
   // buffer toggle
   volatile uint8_t activeBuf;
 
-  // double buffer. aligned for lookup table casting (uint32_t -> uint8_t)
+  // double buffer. aligned for lookup table casting (uint8_t -> uint32_t)
   uint8_t buf[2][CHUNK] __attribute__((aligned(4)));
 
   // --- Image transfer geometry, accessed together when setting up a transfer
-  uint16_t x;      // in bytes
-  uint16_t y;      // in pixels
-  uint16_t width;  // in bytes
-  uint16_t height; // in pixels
+  // used to transfer state between Load functions, the Draw function and the interrupt
+  uint16_t x;
+  uint16_t y;
+  uint16_t width;
+  uint16_t height;
 
   // --- cursor location when loading image ---
-  uint32_t fillPos;
-  uint16_t fillCol;
-  uint16_t rowSkip;
+  uint32_t fillPos_b; // in bytes
+  uint16_t fillCol_b; // in bytes
+  uint16_t rowSkip_b; // in bytes
 
   // --- background image ---
   Image_t *backgroundImage;

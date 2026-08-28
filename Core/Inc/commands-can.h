@@ -13,9 +13,8 @@
 #include "stm32f0xx_hal.h"
 
 // CAN message queue
+// must be a power of 2 for modulo optimization
 #define QUEUE_SIZE 64
-// brightness table size
-#define BRIGHTNESS_TABLE_SIZE 40
 
 // object types
 #define TABLE_OBJ_TYPE 13

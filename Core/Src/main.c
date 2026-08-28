@@ -230,60 +230,60 @@ int main(void) {
   //                             ));
   //   HAL_Delay(1000);
 
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5, (uint8_t *)"RED", 3, false
-#if COLOUR_ENABLED
-                            ,
-                            COLOR_RED
-#endif
-                            ));
-
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 1), (uint8_t *)"GREEN", 5,
-                            false
-#if COLOUR_ENABLED
-                            ,
-                            COLOR_GREEN
-#endif
-                            ));
-
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 2), (uint8_t *)"BLUE", 4, false
-#if COLOUR_ENABLED
-                            ,
-                            COLOR_BLUE
-#endif
-                            ));
-
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 3), (uint8_t *)"YELLOW", 6,
-                            false
-#if COLOUR_ENABLED
-                            ,
-                            COLOR_YELLOW
-#endif
-                            ));
-
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 4), (uint8_t *)"CYAN", 4, false
-#if COLOUR_ENABLED
-                            ,
-                            COLOR_CYAN
-#endif
-                            ));
-
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 5), (uint8_t *)"PURPLE", 6,
-                            false
-#if COLOUR_ENABLED
-                            ,
-                            COLOR_PURPLE
-#endif
-                            ));
-
-  HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), (uint8_t *)"WHITE", 5,
-                            false
-#if COLOUR_ENABLED
-                            ,
-                            COLOR_WHITE
-#endif
-                            ));
-  HAL_Delay(1000);
-
+//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5, (uint8_t *)"RED", 3, false
+// #if COLOUR_ENABLED
+//                             ,
+//                             COLOR_RED
+// #endif
+//                             ));
+//
+//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 1), (uint8_t *)"GREEN", 5,
+//                             false
+// #if COLOUR_ENABLED
+//                             ,
+//                             COLOR_GREEN
+// #endif
+//                             ));
+//
+//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 2), (uint8_t *)"BLUE", 4, false
+// #if COLOUR_ENABLED
+//                             ,
+//                             COLOR_BLUE
+// #endif
+//                             ));
+//
+//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 3), (uint8_t *)"YELLOW", 6,
+//                             false
+// #if COLOUR_ENABLED
+//                             ,
+//                             COLOR_YELLOW
+// #endif
+//                             ));
+//
+//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 4), (uint8_t *)"CYAN", 4, false
+// #if COLOUR_ENABLED
+//                             ,
+//                             COLOR_CYAN
+// #endif
+//                             ));
+//
+//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 5), (uint8_t *)"PURPLE", 6,
+//                             false
+// #if COLOUR_ENABLED
+//                             ,
+//                             COLOR_PURPLE
+// #endif
+//                             ));
+//
+//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), (uint8_t *)"WHITE", 5,
+//                             false
+// #if COLOUR_ENABLED
+//                             ,
+//                             COLOR_WHITE
+// #endif
+//                             ));
+//   HAL_Delay(1000);
+//
   // updating watchdog to 6.55s for main loop
   // this value is safe when doing extreme buffer overloading stress testing
   hiwdg.Init.Prescaler = IWDG_PRESCALER_64;

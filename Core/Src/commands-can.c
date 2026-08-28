@@ -20,15 +20,13 @@
 
 const uint8_t version[8] = "DSP12345";
 
-// private declarations
-
 // tracking the number of messages in the queue and the amount of messages being
 // processed in the main loop
 // circular head and tail approach
 static volatile uint8_t writeIdx = 0; // next slot the interrupt will write to
 static volatile uint8_t readIdx = 0;  // next slot the main loop will read
 
-// Queued CAN messages buffer
+// Queued CAN messages buffer (circular buffer)
 static CanRxMessage_t queue[QUEUE_SIZE];
 
 // brightness shared state members
@@ -59,20 +57,21 @@ static TIM_HandleTypeDef *alarmTimer;
 static TIM_HandleTypeDef *backlightTimer;
 
 //--------------------------------------------------------------------------------
-// private handles 
+// private handles
 
+// CAN display background function handle
+// cmdNum = 0x83
+// id = 0x418
+// data format = LSB_OBJ_NUM, MSB_OBJ_NUM
+// DLC = 2 bytes
 HAL_StatusTypeDef CMD_DispBg(CanRxMessage_t *msg) {
-  // cmdNum = 0x83
-  // id = 0x418
-  // data format = LSB_OBJ_NUM, MSB_OBJ_NUM
-  // assuming this means DLC = 2 bytes
-
   // extracting LSB byte
   uint8_t lsb = msg->data[0];
 
   // extracting MSB byte
   uint16_t msb = msg->data[1] << 8;
 
+  // getting objNum
   uint16_t objNum = lsb | msb;
 
   // objnum checking
@@ -80,6 +79,7 @@ HAL_StatusTypeDef CMD_DispBg(CanRxMessage_t *msg) {
     return HAL_ERROR;
   }
 
+  // assigning object and background reference for readability
   const Obj_t *obj = &objects[objNum - 1];
   Image_t *bg = (Image_t *)obj->img;
 
@@ -88,6 +88,7 @@ HAL_StatusTypeDef CMD_DispBg(CanRxMessage_t *msg) {
     bg = (Image_t *)&File_005_ObjNum_004_480x320_6_18_26;
   }
 
+  // setting and displaying background
   HAL_SPIN(ILI9488_SetBackground(spi, bg));
 
   // display according image logging
@@ -99,14 +100,27 @@ HAL_StatusTypeDef CMD_DispBg(CanRxMessage_t *msg) {
   return HAL_OK;
 }
 
+// CAN display text function handle
+// cmdNum = 0x84
+// id = 0x420
+// format =
+// { First_Pkt_Flag, numChars, LSB_OBJ_NUM, MSB_OBJ_NUM, Char1, Char2, Char3,
+// Char4 },
+// { Char5, Char6, Char7, Char8 ... CharN}
 HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
-  // cmdNum = 0x84
-  // id = 0x420
 
   // static function members for persistent scope
+  // (state saves across this function call)
+
+  // remaining number of characters to process
   static uint8_t remainingChars = 0;
+  // total number of characters in this text
   static uint8_t target = 0;
+  // array to hold the characters
+  // the max size should only be ILI9488_WIDTH_PX/CHARWIDTH = 15,
+  // but some calls use more than that
   static uint8_t charArray[256] = {0};
+  // object number
   static uint16_t objNum = 0;
 
   // checking if DLC is 0
@@ -117,6 +131,9 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
 
   // conditional flag that starts a new text message
   if (msg->data[0] == 0) {
+    // if there was previous data from the last message,
+    // overwrite it with new message
+
     // obj number
     uint8_t lsb = msg->data[2];
     uint16_t msb = msg->data[3] << 8;
@@ -135,7 +152,8 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
       return HAL_ERROR;
     }
 
-    // filling up the remaining bytes of charInfo contained within this packet
+    // filling up the remaining bytes of the character array contained within
+    // this packet
     uint8_t fill = (remainingChars > 4) ? 4 : remainingChars;
     for (uint8_t i = 0; i < fill; i++) {
       charArray[i] = msg->data[i + 4];
@@ -165,6 +183,7 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
 
                               ));
 
+    // logging
     // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
     //                        "Disp text: \"%.*s\", objNum = %u\n", target,
     //                        charArray, objNum);
@@ -184,11 +203,11 @@ HAL_StatusTypeDef CMD_DispText(CanRxMessage_t *msg) {
   return HAL_OK;
 }
 
+// CAN display image function handle
+// cmdNum = 0x85
+// data format = LSB_OBJ_NUM, MSB_OBJ_NUM
+// DLC = 2 bytes
 HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
-  // cmdNum = 0x85
-
-  // data format = LSB_OBJ_NUM, MSB_OBJ_NUM
-  // assuming this means DLC = 2 bytes
 
   // extracting LSB byte
   uint8_t lsb = msg->data[0];
@@ -229,12 +248,13 @@ HAL_StatusTypeDef CMD_DispImage(CanRxMessage_t *msg) {
   return HAL_OK;
 }
 
+// CAN display group function handle
+// cmdNum = 0x86
+// id = 0x430
+// data format = LSB_OBJ_NUM, MSB_OBJ_NUM
+// DLC = 2 bytes
 HAL_StatusTypeDef CMD_DispGrp(CanRxMessage_t *msg) {
   // This command likely isn't used within the project
-
-  // cmdNum = 0x86
-  // data format = LSB_OBJ_NUM, MSB_OBJ_NUM
-  // assuming this means DLC = 2 bytes
 
   // extracting LSB byte
   // uint8_t lsb = msg->data[0];
@@ -258,10 +278,6 @@ HAL_StatusTypeDef CMD_DispGrp(CanRxMessage_t *msg) {
   // return HAL_ERROR;
   // }
 
-  // display according image
-  // ILI9488_LOAD_IMAGE(spi, uint16_t x, uint16_t y, const Image_t *image,
-  // bool overWrite, bool draw)
-
   // diagnostic logging
   // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
   //                        "displayed group with grpNum: %u and index: %u\n",
@@ -272,15 +288,20 @@ HAL_StatusTypeDef CMD_DispGrp(CanRxMessage_t *msg) {
   return HAL_OK;
 }
 
+// CAN send version handle
+// cmdNum = 0x87
+// id = 0x438
+// DLC = 0 bytes
 HAL_StatusTypeDef CMD_SendVersion(CanRxMessage_t *msg) {
-  // cmdNum 0x87
 
   CAN_TxHeaderTypeDef versionHeader = {0};
+
+  // responding with version string
 
   // 8 byte string
   versionHeader.DLC = 8;
 
-  // as specified in protocol
+  // as specified in protocol. cmdNum 0x2D
   versionHeader.StdId = 0x168;
 
   versionHeader.IDE = CAN_ID_STD;
@@ -290,13 +311,18 @@ HAL_StatusTypeDef CMD_SendVersion(CanRxMessage_t *msg) {
 
   uint32_t mailbox;
 
+  // logging
   // HAL_UART_Transmit_IT(uart, (uint8_t *)"sending version\n", 16);
 
+  // sending version
   return HAL_CAN_AddTxMessage(can, &versionHeader, version, &mailbox);
 }
 
+// CAN display system failure handle
+// cmdNum 0x88
+// id = 0x440
+// DLC = 0 bytes
 HAL_StatusTypeDef CMD_SysFail(CanRxMessage_t *msg) {
-  // cmdNum 0x88
   HAL_UART_Transmit_IT(uart, (uint8_t *)"ERROR: SYSTEM FAILURE RECEIVED \n",
                        32);
 
@@ -309,35 +335,55 @@ HAL_StatusTypeDef CMD_SysFail(CanRxMessage_t *msg) {
   return HAL_OK;
 }
 
+// CAN brightness change handle
+// cmdNum 0x89
+// id = 0x448
+// DLC = 1 byte
+// data format = BRIGHTNESS_FLAG
 HAL_StatusTypeDef CMD_Brightness(CanRxMessage_t *msg) {
-  // cmdNum 0x89
+
+  // getting brightness flag to determine what to do to brightness
   uint8_t brightnessFlag = msg->data[0];
   uint32_t thisTick = HAL_GetTick();
 
   switch (brightnessFlag) {
+
   case 1:
     // decrement brightness
+
+    // if brightness is already at its lowest index
     if (brightnessIdx == 0) {
+
       // start beep
       ALARM_StartBeep(alarmTimer);
       beepTick = thisTick;
+
     } else {
+      // decrement
+
       brightnessIdx--;
     }
     break;
+
   case 2:
     // increment brightness
+
+    // if brightness is already at its highest index
     if (brightnessIdx == BRIGHTNESS_TABLE_SIZE - 1) {
       // start beep
       ALARM_StartBeep(alarmTimer);
       beepTick = thisTick;
+
     } else {
+      // increment brightness
       brightnessIdx++;
     }
     break;
+
   case 3:
     // reset brightness
-    brightnessIdx = 29;
+
+    brightnessIdx = DEFAULT_BRIGHTNESS_INDEX;
     break;
   }
 
@@ -356,11 +402,19 @@ HAL_StatusTypeDef CMD_Brightness(CanRxMessage_t *msg) {
   return HAL_OK;
 }
 
+// CAN set alarm handle
+// cmdNum 0x8A
+// id = 0x450
+// DLC = 2 bytes
+// data format = dutyCycle, frequency
 HAL_StatusTypeDef CMD_Alarm(CanRxMessage_t *msg) {
-  // assuming dutyCycle is an 8 bit number where 0 is off and 255 is 100%
   uint8_t dutyCycle = msg->data[0];
   uint8_t frequency = msg->data[1];
 
+  // setting alarm settings
+  // note: in the current implementation,
+  // the duty cycle is used as a fraction of 255 to set duty cycle.
+  // This may need to be changed to 50% all the time
   ALARM_Set(alarmTimer, frequency, dutyCycle);
 
   // logging
@@ -374,7 +428,7 @@ HAL_StatusTypeDef CMD_Alarm(CanRxMessage_t *msg) {
   return HAL_OK;
 }
 
-// list of commands 
+// list of commands
 static CanCommand_t commands[] = {
 
     // display background image
@@ -413,6 +467,7 @@ static CanCommand_t commands[] = {
 //--------------------------------------------------------------------------------
 // public functions
 
+// initialization function to be called in the main loop
 HAL_StatusTypeDef
 CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
               SPI_HandleTypeDef *displaySpiInterface,
@@ -424,17 +479,19 @@ CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
               uint16_t baudInput2Pin, GPIO_TypeDef *baudInput3Port,
               uint16_t baudInput3Pin) {
 
+  // setting global interfaces
   can = canInterface;
   spi = displaySpiInterface;
   uart = serialLoggingInterface;
   alarmTimer = alarmPWMTimerInterface;
   backlightTimer = backlightPWMTimerInterface;
 
+  // last message tick reference
   lastMsgTick = HAL_GetTick();
 
   HAL_Delay(500);
 
-  // display brightness
+  // setting brightness globals from inputted brightness settings
   flashOffset = brightnessSettings.flashOffset;
   prevBrightnessIdx = brightnessSettings.prevBrightnessIdx;
 
@@ -490,8 +547,14 @@ CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
   canInterface->Init.ReceiveFifoLocked = DISABLE;
   canInterface->Init.TransmitFifoPriority = DISABLE;
 
-  // choosing lowest priority pin thats grounded as the can BAUD rate. Adjust
-  // accordingly
+  // choosing lowest priority pin that's grounded as the can BAUD rate.
+  // Adjust accordingly
+  // Heirarchy:
+  // baudInput3 (666.6kb baud)>
+  // baudInput2 (500kb baud) 	>
+  // baudInput1 (250kb baud) 	>
+  // default (128kb baud)
+
   if (HAL_GPIO_ReadPin(baudInput3Port, baudInput3Pin) == GPIO_PIN_RESET) {
     // 670kb baud (more accurately 666.666 baud)
     canInterface->Init.Prescaler = 4;
@@ -549,45 +612,61 @@ CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
   return HAL_OK;
 }
 
+// CAN main loop function that:
+// - processes CAN message queue
+// - checks for CAN inactivity for 4 seconds
+// - stops beeps after 100ms
+// - writes new brightness index to flash after 5 seconds
 HAL_StatusTypeDef CAN_CMDS_Process(void) {
 
-  uint32_t lastMsgTick_StateSave = lastMsgTick;
+  // saving a copy of lastmsg tick to prevent overflow in case an interrupt
+  // fires mid function
+  uint32_t lastMsgTickCopy = lastMsgTick;
+  // saving current tick in case interrupt fires mid function
   uint32_t currentTick = HAL_GetTick();
-  // display error if the can bus is silent for 4 seconds
-  if (currentTick - lastMsgTick_StateSave > 4000 &&
-      lastMsgTick_StateSave != 0) {
 
-    // display error image.
+  // display error if the can bus is silent for 4 seconds
+  if (currentTick - lastMsgTickCopy > 4000 && lastMsgTickCopy != 0) {
+
+    // logging message
     HAL_UART_Transmit_IT(
         uart, (uint8_t *)"TIMEOUT: no command received in the last 4000ms\n",
         48);
 
+    // display error image
     HAL_SPIN(ILI9488_BlitImage(spi, 0, 0, &SYSFAIL_480x320, true
 #if COLOUR_ENABLED
                                ,
-                               // COLOR_RED
-                               COLOR_YELLOW
+                               COLOR_RED
 #endif
 
                                ));
 
+    // resetting last message tick so the above condition doesn't trigger every
+    // loop
     lastMsgTick = 0;
   }
 
-  // if the alarm has been on for 100 ms
+  // if the beep has been on for 100 ms
   if (currentTick - beepTick >= 100 && beepTick != 0) {
 
+    // logging
     // HAL_UART_Transmit_IT(uart, (uint8_t *)"Brightness beep completed\n",
     // 26);
 
+    // stopping the beep
     ALARM_StopBeep(alarmTimer);
 
+    // resetting beep tick
     beepTick = 0;
   }
 
-  // if it's been 5 seconds since last brightness change
+  // if it's been 5 seconds since last brightness change,
+  // and the new brightness value doesn't equal the last saved brightness value
   if (brightnessIdx != prevBrightnessIdx && brightnessTick != 0 &&
       currentTick - brightnessTick > 5000) {
+
+    // resetting brightness tick
     brightnessTick = 0;
 
     // unlocking flash
@@ -604,34 +683,44 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
       erase.PageAddress = BRIGHTNESS_PAGE_ADDR;
       erase.NbPages = 1;
 
-      HAL_StatusTypeDef status = HAL_FLASHEx_Erase(&erase, &pageError);
-      if (status != HAL_OK) {
+      HAL_StatusTypeDef eraseStatus = HAL_FLASHEx_Erase(&erase, &pageError);
+      if (eraseStatus != HAL_OK) {
+        // relock flash on failure
         HAL_FLASH_Lock();
+
+        // logging message
         HAL_UART_Transmit_IT(uart,
                              (uint8_t *)"Failed to write brightness to flash "
                                         "(couldn't erase flash)\n",
                              59);
-        return status;
+        return eraseStatus;
       }
 
+      // reset flash offset when flash is erased
       flashOffset = 0;
     }
 
     // minimum flash write resolution is 16 bit (halfword)
-    // making second part off to indicate a write
+    // making second nibble 0 to indicate a write for startup parsing
     uint16_t halfword = (uint16_t)brightnessIdx | 0x0000u;
 
-    // TODO error handling here
-    HAL_StatusTypeDef progStatus =
+    // writing the halfword to the next empty slot in flash
+    HAL_StatusTypeDef writeStatus =
         HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD,
                           BRIGHTNESS_PAGE_ADDR + flashOffset, halfword);
     HAL_FLASH_Lock();
 
-    if (progStatus != HAL_OK) {
-      return progStatus;
+    if (writeStatus != HAL_OK) {
+      // logging message
+      HAL_UART_Transmit_IT(
+          uart,
+          (uint8_t *)"Failed to write brightness to flash (write failure)\n",
+          59);
+
+      return writeStatus;
     }
 
-    // incrementing offset
+    // incrementing offset by 2 (because each half word stores 2 bytes)
     flashOffset += 2;
 
     prevBrightnessIdx = brightnessIdx;
@@ -641,7 +730,7 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
         uart, (uint8_t *)"Successfully wrote brightness to flash\n", 39);
   }
 
-  // logging
+  // logging the fill level of the queue
   // if (readIdx != writeIdx) {
   //   // logging
   //   uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
@@ -653,24 +742,31 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
   // iterating through every message
   while (readIdx != writeIdx) {
 
+    // reference to current message
     CanRxMessage_t *msg = &queue[readIdx];
 
+    // command number
     uint8_t cmdNum = (uint8_t)(msg->header.StdId >> 3);
 
     // assuming the commandnums are contiguous and in the correct order
+    // if the command number is in range of the list of commands
     if (cmdNum >= commands[0].cmdNum &&
         cmdNum <=
             commands[0].cmdNum + (sizeof(commands) / sizeof(commands[0])) - 1) {
 
-      // executing command
+      // executing handle for command
       commands[cmdNum - commands[0].cmdNum].handle(msg);
 
     } else {
-      // if no commands match
+      // if no commands match (should never trigger because of the CAN filter)
+      // increment read index mod queue size
       readIdx = (readIdx + 1) & (QUEUE_SIZE - 1);
+
+      // return error (the rest of the commands will process next loop)
       return HAL_ERROR;
     }
 
+    // increment read index mod queue size
     readIdx = (readIdx + 1) & (QUEUE_SIZE - 1);
   }
 
@@ -685,8 +781,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
   // setting last tick
   lastMsgTick = HAL_GetTick();
 
-  // nextWriteIdx = (writeIdx + 1) % QUEUE_SIZE
-  // The & optimization only works of QUEUE_SIZE is a power of 2
+  // incrementing the next write index mod the size of buffer
+  // note: The & optimization only works if QUEUE_SIZE is a power of 2
   uint8_t nextWriteIdx = (writeIdx + 1) & (QUEUE_SIZE - 1);
 
   // when the write idx has almost "lapped" the read index
@@ -696,6 +792,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
     uint8_t data[8];
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &hdr, data);
   } else {
+    // message to next spot in queue
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &queue[writeIdx].header,
                          queue[writeIdx].data);
   }

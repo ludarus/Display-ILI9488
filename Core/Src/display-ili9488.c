@@ -8,6 +8,91 @@
 #include "tables.h"
 
 //--------------------------------------------------------------------------------
+// driver explanation
+
+/* --- GENERAL (Both Monochrome and Coloured) --- */
+
+/* Main Functions:
+ *
+ *	Hardware Abstraction
+ * - ILI9488_Reset()
+ *	  - hardware resets the display using the reset pin
+ *	- ILI9488_Select()
+ *	  - Selects display spi device using the CS pin, active low
+ *	- ILI9488_Deselect()
+ *	  - Deselects display spi device using the CS pin, active high
+ *	- ILI9488_Cmd()
+ *	  - Sends command via spi to display
+ *	- ILI9488_Data()
+ *	  - Sends data via spi to display
+ *	- ILI9488_SetRange()
+ *	  - Sets writing region of the display
+ *
+ *	Initialization
+ * - ILI9488_BrightnessInit()
+ *   - Parses last page of flash for saved brightness index/setting
+ *   - Returns settings to main Init function
+ * - ILI9488_Init()
+ *   - Initializes display and display settings
+ *   - Sets background to empty image
+ *
+ * Setters
+ * - ILI9488_SetBackground()
+ *   - Sets the background of the canvas to a background object and draws it to
+ * the display in overwrite mode
+ * - ILI9488_SetBrightness()
+ *   - Sets brightness of display to a specified brightness index
+
+ * General Info / Problem:
+ * - SPI Baud = 12Mbit/sec
+ *   - To get fastest transfer use DMA and lowest colour resolution
+ * - Colour resolution = 3bit per pixel (effectively 4 bit per pixel due to
+ * padding)
+ * - Due to SRAM limitations (32KiB), a full resolution colour screen buffer
+ * cannot be stored in RAM (or even flash)
+ * - Store images with RLE commpression in flash (256KiB) and decompress when
+ * needed
+ * - Expand compressed display info into chunks and send them chunk by chunk
+
+ * Approach:
+ * For fast transfer, use a chunking double buffer approach:
+ * 1. Fill the first buffer with full resolution colour info
+ * 	- make it a small enough chunk so two arrays can fit in RAM
+ * 2. Start transferring the first buffer
+ * 3. While the first buffer is transferring, start filling the second buffer
+ * with pixel data
+ * 4. Start transferring the second buffer
+ * 5. Repeat until data is fully transferred
+ *
+ * - The exact methods used to fill the buffer differ between the coloured and
+ * monochrome driver variants, detailed below:
+ */
+
+/**/
+
+/* --- MONOCHROME --- */
+
+/* Main Functions:
+* - ILI9488_BlitImage()
+* - ILI9488_BlitText()
+* - ILI9488_Draw()
+*
+* Inline Functions:
+*
+* Approach:
+* - A bitpacked screen copy buffer is stored in global state
+*	  - Type ImageTransferState_t
+*	  - This buffer is synced with the display
+*	  - Any updates to be made to the display are first made to this array,
+*	  - Then the ILI9488_Draw() function will read from this array and
+expand the bitpacked monochrome data into the double buffer as explained above
+using the bgPixelTable lookup table
+		- this lookup table takes a bitpacked byte (uint8_t) and outputs 4 bytes (uint32_t) in full colour resolution, as 
+* - Each of the two
+
+*/
+
+//--------------------------------------------------------------------------------
 // global variables
 
 // state so main functions and callbacks can all access render state
@@ -17,7 +102,10 @@ static ImageTransferState_t state;
 // private inline utility functions:
 
 // walks through RLE encoded image
-
+// pass a RLE encoded array to walk through,
+// the number of remaining pixels (reference so it gets incremented),
+// the current index/position of the array (reference),
+// and the number of pixels to walk through
 static inline void rleAdvance(const uint8_t *data, uint8_t *remaining_p,
                               uint32_t *index, uint32_t count_p) {
   // local clone for pointer aliasing
@@ -38,47 +126,62 @@ static inline void rleAdvance(const uint8_t *data, uint8_t *remaining_p,
     rem = data[idx];
   }
 
+  // updating references
   (*index) = idx;
   (*remaining_p) = rem;
 }
 
 // bitpacks a contiguous section of a buffer while advancing position pointer
+// pass a buffer to bitpack,
+// the current position within the buffer (reference),
+// the number of pixels to bitpack,
+// an on or off value of the pixels,
+// and an overwrite flag to overwrite the existing ON pixels or not
 static inline void fillBitpacked(uint8_t *buf_p, uint32_t *pos_p,
                                  uint16_t count_p, const bool isOn,
                                  const bool overWrite) {
+  // pointer aliasing
   uint32_t pos = (*pos_p);
 
   // filling leading bits
   // if the current position isn't byte aligned
   if (pos % 8 != 0) {
+    // compute offsets and a mask to fill the correct part of the byte
     uint8_t offset = pos % 8;
     uint8_t leading = 8 - offset;
     leading = leading > count_p ? count_p : leading;
     uint8_t mask = (uint8_t)(((1u << leading) - 1u) << offset);
 
-    // if the pixels to write are on or off, mask accordingly
+    // if the pixels to write are on, OR with existing pixels
     if (isOn) {
       buf_p[pos >> 3] |= mask;
-    } else if (overWrite) {
+    }
+    // if pixels to write are off but overwrite mode is enabled, overwrite
+    else if (overWrite) {
       buf_p[pos >> 3] &= (uint8_t)~mask;
     }
 
     // decrementing count and incrementing position
+    // (decrement count for bytes calculation)
     count_p -= leading;
     pos += leading;
   }
 
   // filling middle bytes
   for (uint8_t byte = 0; byte < count_p >> 3; byte++) {
+
+    // if the pixels to write are on, OR with existing pixels
     if (isOn) {
       // write byte
       buf_p[pos >> 3] = 0xFF;
-    } else if (overWrite) {
+    }
+    // if pixels to write are off but overwrite mode is enabled, overwrite
+    else if (overWrite) {
       // clear byte
       buf_p[pos >> 3] = 0;
     }
 
-    // incrementing global position
+    // incrementing global position by a byte
     pos += 8;
   }
 
@@ -86,14 +189,20 @@ static inline void fillBitpacked(uint8_t *buf_p, uint32_t *pos_p,
   uint8_t trailing = count_p % 8;
   // check for unaligned bits
   if (trailing != 0) {
+    // if the pixels to write are on, OR with existing pixels
     if (isOn) {
       buf_p[pos >> 3] |= 0xFF >> (8 - trailing);
-    } else if (overWrite) {
+    }
+    // if pixels to write are off but overwrite mode is enabled, overwrite
+    else if (overWrite) {
       buf_p[pos >> 3] &= 0xFF << trailing;
     }
+
+    // increment position
     pos += trailing;
   }
 
+  // setting position reference to updated position
   (*pos_p) = pos;
 }
 
@@ -291,6 +400,7 @@ static inline void bgPreload(const uint8_t *bgData, uint8_t *screenData,
 //--------------------------------------------------------------------------------
 // private display utility functions
 
+// hardware resets the display using the reset pin
 void ILI9488_Reset(void) {
   // setting the reset pin to low to signal a reset
   HAL_GPIO_WritePin(DISPLAY_RESET_GPIO_Port, DISPLAY_RESET_Pin, GPIO_PIN_RESET);
@@ -304,12 +414,13 @@ void ILI9488_Reset(void) {
   HAL_Delay(100);
 }
 
-// LCD chip select signal, active low
+// Selects display spi device using the CS pin, active low
 void ILI9488_Select(void) {
   // setting the select pin to low
   HAL_GPIO_WritePin(DISPLAY_CS_GPIO_Port, DISPLAY_CS_Pin, GPIO_PIN_RESET);
 }
 
+// Deselects display spi device using the CS pin, active high
 void ILI9488_Deselect(void) {
   // setting the select pin to high
   HAL_GPIO_WritePin(DISPLAY_CS_GPIO_Port, DISPLAY_CS_Pin, GPIO_PIN_SET);
@@ -392,6 +503,8 @@ HAL_StatusTypeDef ILI9488_SetRange(SPI_HandleTypeDef *spi, uint16_t colStart,
   return HAL_OK;
 }
 
+// Parses last page of flash for saved brightness index/setting
+// Returns settings to main Init function
 BrightnessInfo_t ILI9488_BrightnessInit(SPI_HandleTypeDef *spi,
                                         TIM_HandleTypeDef *backlightTimer) {
   BrightnessInfo_t output;
@@ -416,7 +529,7 @@ BrightnessInfo_t ILI9488_BrightnessInit(SPI_HandleTypeDef *spi,
   // default value if one can't be found in flash
   output.flashOffset = 0;
 
-  ILI9488_SetBrightness(spi, backlightTimer, 29);
+  ILI9488_SetBrightness(spi, backlightTimer, DEFAULT_BRIGHTNESS_INDEX);
 
   return output;
 }
@@ -535,28 +648,28 @@ HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi) {
 
   state.activeBuf = 0;
 
-  state.fillPos = (uint32_t)ILI9488_WIDTH_BYTES * state.y + state.x;
-  state.fillCol = 0;
-  state.rowSkip = ILI9488_WIDTH_BYTES - state.width;
+  state.fillPos_b = (uint32_t)ILI9488_WIDTH_BYTES * state.y + state.x;
+  state.fillCol_b = 0;
+  state.rowSkip_b = ILI9488_WIDTH_BYTES - state.width;
 
   if (state.target_eb <= CHUNK) {
     expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                  state.target_eb >> 2, state.rowSkip, &state.fillPos,
-                  &state.fillCol, state.width);
+                  state.target_eb >> 2, state.rowSkip_b, &state.fillPos_b,
+                  &state.fillCol_b, state.width);
     HAL_TRY(
         HAL_SPI_Transmit_DMA(spi, state.buf[state.activeBuf], state.target_eb));
     state.progress_eb = state.target_eb;
   } else {
     expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                  CHUNK >> 2, state.rowSkip, &state.fillPos, &state.fillCol,
-                  state.width);
+                  CHUNK >> 2, state.rowSkip_b, &state.fillPos_b,
+                  &state.fillCol_b, state.width);
     state.progress_eb += CHUNK;
     state.activeBuf = !state.activeBuf;
 
     uint32_t remaining = state.target_eb - state.progress_eb;
     expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                  (remaining < CHUNK ? remaining : CHUNK) >> 2, state.rowSkip,
-                  &state.fillPos, &state.fillCol, state.width);
+                  (remaining < CHUNK ? remaining : CHUNK) >> 2, state.rowSkip_b,
+                  &state.fillPos_b, &state.fillCol_b, state.width);
     HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[!state.activeBuf], CHUNK));
   }
   return HAL_OK;
@@ -804,8 +917,8 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
                                     bool overWrite) {
   if (state.drawStatus == DS_NONE) {
     // checking to make sure the image is in bounds:
-    if (x_p + image->width_p > ILI9488_WIDTH_PX ||
-        y_p + image->height_p > ILI9488_HEIGHT_PX) {
+    if (x_p + image->width > ILI9488_WIDTH_PX ||
+        y_p + image->height > ILI9488_HEIGHT_PX) {
       return HAL_ERROR;
     }
 
@@ -815,8 +928,8 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
     // copying state variables for compiler optimization (pointer aliasing)
     uint16_t col_p = 0;                                       // in pixels
     uint32_t pos_p = (ILI9488_WIDTH_PX * y_p) + x_p;          // in pixels
-    const uint16_t imgWidth_p = image->width_p;                 // in pixels
-    const uint16_t imgHeight_p = image->height_p;               // in pixels
+    const uint16_t imgWidth_p = image->width;                 // in pixels
+    const uint16_t imgHeight_p = image->height;               // in pixels
     const uint16_t rowSkip_p = ILI9488_WIDTH_PX - imgWidth_p; // in pixels
     const uint8_t *imgData = image->data;
     uint8_t *screenData = state.screenCopy;
@@ -960,7 +1073,7 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
 }
 #endif
 
-// sets brightness of display
+// sets brightness of display to a specified brightness index
 HAL_StatusTypeDef ILI9488_SetBrightness(SPI_HandleTypeDef *spi,
                                         TIM_HandleTypeDef *tim, uint8_t idx) {
   uint8_t val = brightnessTable[idx];
@@ -974,11 +1087,13 @@ HAL_StatusTypeDef ILI9488_SetBrightness(SPI_HandleTypeDef *spi,
   return HAL_OK;
 }
 
+// Sets the background of the canvas to a background object and draws it to the
+// display in overwrite mode
 HAL_StatusTypeDef ILI9488_SetBackground(SPI_HandleTypeDef *spi,
                                         const Image_t *bg) {
 
   // making sure requested image is full screen
-  if (bg->height_p != 320 || bg->width_p != 480) {
+  if (bg->height != 320 || bg->width != 480) {
     return HAL_ERROR;
   }
 
@@ -1008,6 +1123,8 @@ HAL_StatusTypeDef ILI9488_SetBackground(SPI_HandleTypeDef *spi,
 #endif
 }
 
+// Initializes display and display settings
+// Sets background to empty image
 BrightnessInfo_t ILI9488_Init(SPI_HandleTypeDef *spi,
                               TIM_HandleTypeDef *backlightTimer) {
 
@@ -1137,7 +1254,8 @@ BrightnessInfo_t ILI9488_Init(SPI_HandleTypeDef *spi,
   ILI9488_Cmd(spi, DCMD_DISON);
 
   // initializing background to empty image
-  ILI9488_SetBackground(spi, (Image_t *)&File_005_ObjNum_004_480x320_6_18_26);
+  HAL_SPIN(ILI9488_SetBackground(
+      spi, (Image_t *)&File_005_ObjNum_004_480x320_6_18_26));
 
   return ILI9488_BrightnessInit(spi, backlightTimer);
 }
@@ -1233,8 +1351,8 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
       state.activeBuf = !state.activeBuf;
 
       expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                    CHUNK >> 2, state.rowSkip, &state.fillPos, &state.fillCol,
-                    state.width);
+                    CHUNK >> 2, state.rowSkip_b, &state.fillPos_b,
+                    &state.fillCol_b, state.width);
     }
   }
 }

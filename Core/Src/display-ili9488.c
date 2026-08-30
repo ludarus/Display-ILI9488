@@ -104,8 +104,43 @@ draw function)
 *   - fills the next buffer with new expanded colour info and transfers the
 completed buffer
 
-* Inline Functions:
-*
+*/
+
+/* --- COLOURED --- */
+
+/* Approach:
+* - A bitpacked background buffer is stored in the global state
+* 		- Type ImageTransferState_t
+* - This buffer holds whatever the current background is, and is updated when
+the background is set (by decompressing the RLE flash bg and bitpacking it into
+the buffer)
+*   	- SetBackground() function
+* - Because there isn't enough RAM to store full colour data, the coloured
+objects are live decompressed while the double buffer is transmitting
+*   - this results in slower display times on full screen images
+* - On a blitImage or blitText call, the correct region of the bitpacked
+background buffer is expanded to the double buffer
+*	- then, the image/text is decompresed from flash and written on top of
+the expanded background (in the double buffer) in full colour resolution
+* - because of this, image/text data is actively decompressed in the interrupt
+instead of just expanded with the lookup table like in the monochrome variant
+
+* Main Functions:
+* - ILI9488_BlitImage()
+* 	-	expands the first chunk of background from the bitpacked
+background buffer to the first buffer and decompresses the first chunk of image
+data on top
+* - ILI9488_BlitText()
+*   - loads a series of characters from the fontmap onto the screencopy buffer
+* 	-	expands the first chunk of background from the bitpacked
+background buffer to the first buffer and decompresses the first chunk of text
+data on top
+* - HAL_SPI_TxCpltCallback()
+*   - triggers when a dma transfer over spi has been completed
+*   - fills the next double buffer with expanded background info
+*   - Decompresses the next image/text data and puts it over the background (if
+OR mode is enabled)
+         - Transmits the filled buffer
 */
 
 //--------------------------------------------------------------------------------
@@ -224,6 +259,7 @@ static inline void fillBitpacked(uint8_t *buf_p, uint32_t *pos_p,
 
 #if COLOUR_ENABLED
 // replaces sections of an expanded background with image coloured pixels
+// used on the double buffer
 static inline void fillExpanded(uint8_t *buf, uint32_t *pos_p, uint16_t count_p,
                                 const uint8_t onColour, bool isOn,
                                 const bool overWrite) {
@@ -271,6 +307,7 @@ static inline void fillExpanded(uint8_t *buf, uint32_t *pos_p, uint16_t count_p,
 // transmit to the display.
 // Takes 1 byte which contains 8 pixels worth of information and expands it into
 // 4 bytes of colour coded data
+// used to expand the background buffer to the double buffer
 static inline void expandBgToChunk(uint8_t *background, uint32_t *buf_b,
                                    const uint32_t count_p,
                                    const uint16_t rowSkip_b, uint32_t *pos_b,
@@ -291,6 +328,8 @@ static inline void expandBgToChunk(uint8_t *background, uint32_t *buf_b,
   (*col_b) = col;
 }
 
+// expands compressed rle image data to the double buffer
+// ORing with background in or mode, and overwriting previous
 static inline void expandImgToChunk(Image_t *img, const uint8_t colour,
                                     uint8_t *buf_p, const uint32_t count_p,
                                     uint32_t *pos_p, uint16_t *rem_p,
@@ -309,10 +348,13 @@ static inline void expandImgToChunk(Image_t *img, const uint8_t colour,
   // walking through the rle data
   while (pos < target) {
     uint32_t chunk = rem < (target - pos) ? rem : (target - pos);
+    // expanding the data to the double buffer
     fillExpanded(buf_p, &pos, chunk, colour, idx % 2, overWrite);
+    // advancing the rle pointers
     rleAdvance(imgData, &rem, &idx, chunk);
   }
 
+  // updating references
   (*pos_p) = pos;
   (*rem_p) = rem;
   (*index) = idx;
@@ -324,6 +366,8 @@ static inline uint32_t fontMask(uint8_t glyphByte) {
          ((uint32_t)nibbleTable[glyphByte >> 4] << 16);
 }
 
+// expands compressed bitpacked text data to the double buffer
+// ORing with background in or mode, and overwriting previous
 static inline void expandTextToChunk(const uint32_t expandedColour,
                                      uint32_t *buf_b, const uint32_t count_p,
                                      const Character_t *font, uint8_t *text,
@@ -337,23 +381,30 @@ static inline void expandTextToChunk(const uint32_t expandedColour,
   uint16_t col = *col_b;
 
   for (uint32_t i = 0; i < count_p; i++) {
+    // getting mask for bitpacked text
     uint32_t mask = fontMask(font[text[cChar] - 32].data[pos + col]);
+
     if (overWrite) {
+      // replacing bytes of buffer with correct colour data (4 bytes at a time)
       buf_b[i] = mask & expandedColour;
     } else {
+      // ORing bytes of buffer with correct colour data (4 bytes at a time)
       buf_b[i] = (buf_b[i] & ~mask) | (expandedColour & mask);
     }
 
+    // incrementing counters
     if (++col >= charWidth_b) {
       col = 0;
       cChar++;
       if (cChar >= textSize) {
+        // switching to next character if this one is finished
         pos += charWidth_b;
         cChar = 0;
       }
     }
   }
 
+  // updating references
   *currentChar = cChar;
   *pos_b = pos;
   *col_b = col;
@@ -556,6 +607,7 @@ BrightnessInfo_t ILI9488_BrightnessInit(SPI_HandleTypeDef *spi,
 }
 
 #if COLOUR_ENABLED
+// replaces background buffer in state with new one
 // draws background to screen
 HAL_StatusTypeDef ILI9488_BlitBackground(SPI_HandleTypeDef *spi) {
 
@@ -731,6 +783,7 @@ HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi) {
 
 #if COLOUR_ENABLED
 
+// starts drawing image to screen (processing continues in interrupt)
 HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
                                     uint16_t y_p, const Image_t *image,
                                     const bool overWrite,
@@ -837,6 +890,7 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
   }
 }
 
+// starts drawing text to screen (processing continues in interrupt)
 HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
                                    uint16_t y_p, uint8_t text[],
                                    uint16_t textSize, const bool overWrite,
@@ -1417,7 +1471,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
       // toggling active buffer
       state.activeBuf = !state.activeBuf;
 
-		// expanding the next CHUNK of screencopy
+      // expanding the next CHUNK of screencopy
       expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
                     CHUNK >> 2, state.rowSkip_b, &state.fillPos_b,
                     &state.fillCol_b, state.width);

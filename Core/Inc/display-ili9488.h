@@ -180,15 +180,21 @@ typedef struct {
   uint8_t buf[2][CHUNK] __attribute__((aligned(4)));
 
   // --- Image transfer geometry, accessed together when setting up a transfer
-  // used to transfer state between Load functions, the Draw function and the interrupt
+  // used to transfer state between Load functions, the Draw function and the
+  // interrupt
   uint16_t x;
   uint16_t y;
   uint16_t width;
   uint16_t height;
 
-  // --- cursor location when loading image ---
+  // --- cursor location when drawing region ---
+  // absolute position relative to the screencopy buffer (index)
   uint32_t fillPos_b; // in bytes
+  // column of the write region relative to the starting column of the write
+  // region
   uint16_t fillCol_b; // in bytes
+  // number of bytes to add to fillPos when fillCol has reached the final column
+  // of the write region
   uint16_t rowSkip_b; // in bytes
 
   // --- background image ---

@@ -12,6 +12,7 @@
 #include "commands-can.h"
 #include "display-ili9488.h"
 #include "stm32f0xx_hal.h"
+#include "stm32f0xx_hal_def.h"
 #include "tables.h"
 #include <stdio.h>
 
@@ -489,8 +490,6 @@ CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
   // last message tick reference
   lastMsgTick = HAL_GetTick();
 
-  HAL_Delay(500);
-
   // setting brightness globals from inputted brightness settings
   flashOffset = brightnessSettings.flashOffset;
   prevBrightnessIdx = brightnessSettings.prevBrightnessIdx;
@@ -733,10 +732,10 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
   // logging the fill level of the queue
   // if (readIdx != writeIdx) {
   //   // logging
-  //   uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-  //                          "%u, %u\n", readIdx, writeIdx);
+  //   uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg), "%u, %u\n",
+  //                          writeIdx, readIdx);
   //
-  //   HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
+  //   HAL_UART_Transmit(uart, diagnosticMsg, len, HAL_MAX_DELAY);
   // }
 
   // iterating through every message

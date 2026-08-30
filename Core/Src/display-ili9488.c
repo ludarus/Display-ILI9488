@@ -72,24 +72,40 @@
 
 /* --- MONOCHROME --- */
 
-/* Main Functions:
-* - ILI9488_BlitImage()
-* - ILI9488_BlitText()
-* - ILI9488_Draw()
-*
-* Inline Functions:
-*
-* Approach:
+/* Approach:
 * - A bitpacked screen copy buffer is stored in global state
-*	  - Type ImageTransferState_t
-*	  - This buffer is synced with the display
-*	  - Any updates to be made to the display are first made to this array,
-*	  - Then the ILI9488_Draw() function will read from this array and
+* - Type ImageTransferState_t
+* - This buffer is synced with the display
+* - Any updates to be made to the display are first made to this array
+*  	 - via BlitImage() and BlitText() functions
+* - Then the ILI9488_Draw() function will read from this array and
 expand the bitpacked monochrome data into the double buffer as explained above
 using the bgPixelTable lookup table
-		- this lookup table takes a bitpacked byte (uint8_t) and outputs 4 bytes (uint32_t) in full colour resolution, as 
-* - Each of the two
+*  - this lookup table takes a bitpacked byte (uint8_t) and outputs
+4 bytes (uint32_t) in full colour resolution, as each full resolution byte
+stores 2 pixels
+* - note that the state struct must correctly be updated between these function
+calls, as this is how data is transferred between the load function, draw
+function, and interrupt
 
+* Main Functions:
+* - ILI9488_BlitImage()
+*   - decomresses an image from flash and loads it onto the screencopy buffer
+* - ILI9488_BlitText()
+*   - loads a series of characters from the fontmap onto the screencopy buffer
+* - ILI9488_Draw()
+*   - draws the last updated region
+*   - note: a refresh() function that updates the entire screen can be made if
+needed by setting state.x and state.y to 0, state.width and state.height to the
+dimensions of the screen, and state.objSize to height * width (and calling the
+draw function)
+* - HAL_SPI_TxCpltCallback()
+*   - triggers when a dma transfer over spi has been completed
+*   - fills the next buffer with new expanded colour info and transfers the
+completed buffer
+
+* Inline Functions:
+*
 */
 
 //--------------------------------------------------------------------------------
@@ -348,6 +364,7 @@ static inline void expandTextToChunk(const uint32_t expandedColour,
 // transmit to the display.
 // Takes 1 byte which contains 8 pixels worth of information and expands it into
 // 4 bytes of colour coded data
+// used to expand bytes in the screencopy buffer to the chunked double buffer
 static inline void expandToChunk(uint8_t *screenData, uint32_t *dst,
                                  const uint32_t count, const uint32_t rowSkip_b,
                                  uint32_t *pos_b, uint16_t *col_b,
@@ -368,6 +385,10 @@ static inline void expandToChunk(uint8_t *screenData, uint32_t *dst,
   (*col_b) = col;
 }
 
+// preloads a rle encoded background image to the screencopy buffer on an
+// inputted region
+// used for OR mode drawing to make sure data from the previous
+// write isn't kept
 static inline void bgPreload(const uint8_t *bgData, uint8_t *screenData,
                              uint32_t pos_p, const uint16_t width_p,
                              const uint16_t height_p) {
@@ -617,7 +638,8 @@ HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi) {
   HAL_TRY(ILI9488_SetRange(spi, state.x, state.x + state.width - 1, state.y,
                            state.y + state.height - 1));
 
-  // conditions should not ever trigger, but still here just in case
+  // checking if the inputted write region exceeds the display's bounds
+  // conditions should never trigger, but still here just in case
   if (state.x + state.width > ILI9488_WIDTH_PX) {
     state.width = ILI9488_WIDTH_PX - state.x;
   }
@@ -626,7 +648,7 @@ HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi) {
     state.height = ILI9488_HEIGHT_PX - state.y;
   }
 
-  // converting pixels to bytes
+  // converting pixels to bytes because the rest of the function uses bytes
   state.x /= 8;
   state.width /= 8;
 
@@ -639,37 +661,65 @@ HAL_StatusTypeDef ILI9488_Draw(SPI_HandleTypeDef *spi) {
   // selecting spi device
   ILI9488_Select();
 
-  // double buffering
-
   // sending image data. chunking data for DMA and memory saving purposes
+
+  // setting progress counter to 0
   state.progress_eb = 0;
 
+  // setting image target (in expanded bytes)
   state.target_eb = state.objSize_p / 2;
 
+  // setting the active buffer in the double buffer
   state.activeBuf = 0;
 
+  // setting the starting position of the fill cursor in bytes
   state.fillPos_b = (uint32_t)ILI9488_WIDTH_BYTES * state.y + state.x;
+  // setting the starting column relative to the write region of the fill cursor
+  // in bytes
   state.fillCol_b = 0;
+  // setting the number of bytes to add when the cursor has reached the last
+  // column of the write region
   state.rowSkip_b = ILI9488_WIDTH_BYTES - state.width;
 
+  // expanding and transmitting the first chunk of the write region
+
+  // if the target is smaller than the maximum chunk value, transmit only the
+  // size of the target
   if (state.target_eb <= CHUNK) {
+    // expanding the target amount of screencopy to the first double buffer
     expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
                   state.target_eb >> 2, state.rowSkip_b, &state.fillPos_b,
                   &state.fillCol_b, state.width);
+    // transmission
     HAL_TRY(
         HAL_SPI_Transmit_DMA(spi, state.buf[state.activeBuf], state.target_eb));
+
+    // condition to finish transmitting in the interrupt
     state.progress_eb = state.target_eb;
   } else {
+    // expanding a full CHUNK of the screencopy buffer to the first double
+    // buffer
     expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
                   CHUNK >> 2, state.rowSkip_b, &state.fillPos_b,
                   &state.fillCol_b, state.width);
+
+    // incrementing progress counter
     state.progress_eb += CHUNK;
+
+    // toggling the active buffer
     state.activeBuf = !state.activeBuf;
 
     uint32_t remaining = state.target_eb - state.progress_eb;
+
+    // expanding the next chunk of data from screencopy to the second double
+    // buffer
     expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
-                  (remaining < CHUNK ? remaining : CHUNK) >> 2, state.rowSkip_b,
-                  &state.fillPos_b, &state.fillCol_b, state.width);
+                  // checking if the remaining data is smaller than a chunk
+                  (remaining < CHUNK ? remaining : CHUNK) >> 2,
+
+                  state.rowSkip_b, &state.fillPos_b, &state.fillCol_b,
+                  state.width);
+    // transmitting the first double buffer that has already been filled
     HAL_TRY(HAL_SPI_Transmit_DMA(spi, state.buf[!state.activeBuf], CHUNK));
   }
   return HAL_OK;
@@ -915,6 +965,7 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
 HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
                                     uint16_t y_p, const Image_t *image,
                                     bool overWrite) {
+  // checking if another function is already drawing
   if (state.drawStatus == DS_NONE) {
     // checking to make sure the image is in bounds:
     if (x_p + image->width > ILI9488_WIDTH_PX ||
@@ -922,11 +973,15 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
       return HAL_ERROR;
     }
 
+    // setting draw status in case other functions are called while this one is
+    // operating on the screen buffer
     state.drawStatus = DS_IMG;
 
-    // all pixels in image including ones that are clipped off by the edge of
-    // copying state variables for compiler optimization (pointer aliasing)
-    uint16_t col_p = 0;                                       // in pixels
+    // copying state variables for memory optimization (pointer aliasing)
+
+    // column of image relative to the starting column of the image
+    uint16_t col_p = 0; // in pixels
+                        // global position of the loading cursor  (index)
     uint32_t pos_p = (ILI9488_WIDTH_PX * y_p) + x_p;          // in pixels
     const uint16_t imgWidth_p = image->width;                 // in pixels
     const uint16_t imgHeight_p = image->height;               // in pixels
@@ -936,15 +991,18 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
 
     // pre loading background if OR mode is enabled
     if (!overWrite) {
+      // replacing previous display info for this region with background
       bgPreload(state.backgroundImage->data, screenData, pos_p, imgWidth_p,
                 imgHeight_p);
     }
 
-    // drawing image
+    // iterating through every RLE value
     for (uint32_t i = 0; i < image->size; i++) {
 
-      // faster loading algorithm
+      // RLE on or off value
       bool isOn = i % 2;
+
+      // remaining number of pixels to load in this RLE value
       uint8_t remaining_p = imgData[i]; // in pixels
 
       while (remaining_p > 0) {
@@ -952,21 +1010,28 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
         // pixels in the current row
         uint16_t chunk_p = imgWidth_p - col_p;
 
-        // if chunk is more than the remaining pixels needed
+        // clamping chunk to the number of remaining pixels
         chunk_p = remaining_p > chunk_p ? chunk_p : remaining_p;
+
+        // decrementing the number of remaining pixels
         remaining_p -= chunk_p;
 
+        // filling the screenbuffer with this segment of pixels
+        // note: increments pos_p within the function
         fillBitpacked(screenData, &pos_p, chunk_p, isOn, overWrite);
 
+        // incrementing column counter
         // should only ever == imgWidth as per the logic above
         if ((col_p += chunk_p) >= imgWidth_p) {
+          // if the edge of the image has been reached, reset column and
+          // increment position by one row
           col_p = 0;
           pos_p += rowSkip_p;
         }
       }
     }
 
-    // setting state variables
+    // setting state variables for DRAW function write region
     state.x = x_p;
     state.y = y_p;
     state.width = imgWidth_p;
@@ -983,24 +1048,29 @@ HAL_StatusTypeDef ILI9488_BlitImage(SPI_HandleTypeDef *spi, uint16_t x_p,
 HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
                                    uint16_t y_p, uint8_t text[],
                                    uint16_t textSize, const bool overWrite) {
-
+  // checking if another function is already drawing
   if (state.drawStatus == DS_NONE) {
-    // checking to make sure the text is in bounds
+
+    // full width of text
     uint16_t boundsWidth_p = CHARWIDTH * textSize; // in pixels
 
+    // checking to make sure the minimum text is in bounds of the display
     if (y_p + CHARHEIGHT > ILI9488_HEIGHT_PX || x_p > ILI9488_WIDTH_PX) {
       return HAL_ERROR;
     }
 
+    // setting draw status
     state.drawStatus = DS_TEXT;
 
-    // clamping text size
+    // clamping text size to only what can fit on screen
     if (boundsWidth_p + x_p > ILI9488_WIDTH_PX) {
       textSize = (ILI9488_WIDTH_PX - x_p) / CHARWIDTH;
       boundsWidth_p = CHARWIDTH * textSize;
     }
 
     // text processing to make sure all characters are displayable
+    // (eg. if they aren't represented in the fontmap, replace with blank
+    // character)
     for (uint8_t i = 0; i < textSize; i++) {
       // if not displayable set to blank character
       if (text[i] < 32 || text[i] >= FONTSIZE + 32) {
@@ -1008,11 +1078,10 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
       }
     }
 
+    // defining constants for text loading
     const uint32_t bytesPerChar_b = (CHARWIDTH * CHARHEIGHT) / 8; // in bytes
-
-    const uint8_t charWidth_b = CHARWIDTH / 8; // in bytes
+    const uint8_t charWidth_b = CHARWIDTH / 8;                    // in bytes
     const uint16_t rowSkip_b = ILI9488_WIDTH_BYTES - charWidth_b;
-
     uint8_t *screenData = state.screenCopy;
 
     // pre loading background if OR mode is enabled
@@ -1059,7 +1128,7 @@ HAL_StatusTypeDef ILI9488_BlitText(SPI_HandleTypeDef *spi, uint16_t x_p,
       }
     }
 
-    // setting state variables
+    // setting state variables for draw function
     state.x = x_p;
     state.y = y_p;
     state.width = boundsWidth_p;
@@ -1166,7 +1235,6 @@ BrightnessInfo_t ILI9488_Init(SPI_HandleTypeDef *spi,
   // Interface Pixel Format - instruction 3Ah COLMOD
   ILI9488_Cmd(spi, DCMD_COLMOD);
   // Lowest available is 3bit/pixel
-  // 00000001
   // format: 0 0 R G B R G B
   // each byte = two pixels due to padding
   uint8_t colmod = 0b01000001;
@@ -1225,7 +1293,7 @@ BrightnessInfo_t ILI9488_Init(SPI_HandleTypeDef *spi,
       0x1F, 0x1F, 0x1F, 0x1F, // Sixth_Axis (Magenta) Seemingly only effects Red
   };
   ILI9488_Data(spi, &cectrl2[0], 12);
-  //
+
   // coarse gamma adjustment
   ILI9488_Cmd(spi, DCMD_DGAMCTRL1);
   uint8_t gamctrl1[16] = {
@@ -1333,8 +1401,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
 
     // partial chunk remaining
     else if (state.target_eb - state.progress_eb < CHUNK) {
-      // can't do anything about error handling here?
-      // maybe TODO find a way to re run the draw function if error occurs here
+      // transmitting the rest of the info
       HAL_SPI_Transmit_DMA(hspi, state.buf[state.activeBuf],
                            state.target_eb - state.progress_eb);
       // set progress to finished
@@ -1345,11 +1412,12 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
     else {
       // incrementing image progress
       state.progress_eb += CHUNK;
-      // transmitting loaded buffer
+      // transmitting the loaded buffer from last cycle
       HAL_SPI_Transmit_DMA(hspi, state.buf[state.activeBuf], CHUNK);
       // toggling active buffer
       state.activeBuf = !state.activeBuf;
 
+		// expanding the next CHUNK of screencopy
       expandToChunk(state.screenCopy, (uint32_t *)state.buf[state.activeBuf],
                     CHUNK >> 2, state.rowSkip_b, &state.fillPos_b,
                     &state.fillCol_b, state.width);

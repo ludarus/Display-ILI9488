@@ -9,7 +9,7 @@
 
 #ifndef INC_SWITCHES_H_
 #define INC_SWITCHES_H_
-
+  
 HAL_StatusTypeDef SWITCHES_Process(CAN_HandleTypeDef *canInterface);
 
 #endif /* INC_SWITCHES_H_ */

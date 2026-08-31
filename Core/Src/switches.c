@@ -81,15 +81,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
     HAL_CAN_AddTxMessage(can, &header, &debouncedState, &mailbox);
   }
 }
-void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan) {
-  HAL_UART_Transmit_IT(uart, (const uint8_t *)"completed switch transmission\n",
-                       30);
-}
-void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan) {
-  HAL_UART_Transmit_IT(uart, (const uint8_t *)"completed switch transmission\n",
-                       30);
-}
-void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan) {
-  HAL_UART_Transmit_IT(uart, (const uint8_t *)"completed switch transmission\n",
-                       30);
-}
+
+// void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan) {
+//   HAL_UART_Transmit_IT(uart, (const uint8_t *)"completed switch transmission\n",
+//                        30);
+// }
+// void HAL_CAN_TxMailbox1CompleteCallback(CAN_HandleTypeDef *hcan) {
+//   HAL_UART_Transmit_IT(uart, (const uint8_t *)"completed switch transmission\n",
+//                        30);
+// }
+// void HAL_CAN_TxMailbox2CompleteCallback(CAN_HandleTypeDef *hcan) {
+//   HAL_UART_Transmit_IT(uart, (const uint8_t *)"completed switch transmission\n",
+//                        30);
+// }

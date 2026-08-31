@@ -296,9 +296,9 @@ int main(void) {
   //                             ));
   //   HAL_Delay(1000);
   //
-  // updating watchdog to 6.55s for main loop
-  // this value is safe when doing extreme buffer overloading stress testing
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_64;
+  // updating watchdog to 800ms for main loop
+  // this value is for a worst case scenario of all background queue and a message limit of 5
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_8;
   hiwdg.Init.Reload = 4095;
   HAL_IWDG_Init(&hiwdg); // re-init just updates PR/RLR via 0x5555 unlock
 

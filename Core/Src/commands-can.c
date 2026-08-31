@@ -792,17 +792,18 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
     uint8_t data[8];
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &hdr, data);
 
-    HAL_UART_Transmit_IT(uart, "overflowing\n", 10);
+    HAL_UART_Transmit_IT(uart, (const uint8_t *)"overflowing\n", 12);
   } else {
     // message to next spot in queue
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &queue[writeIdx].header,
                          queue[writeIdx].data);
     // logging the fill level of the queue
     // logging
-    // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
-    //                        "%u\n ", readIdx - nextWriteIdx);
-    //
-    // HAL_UART_Transmit(uart, diagnosticMsg, len, HAL_MAX_DELAY);
+    uint8_t len =
+        snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+                 "widx: %u, ridx: %u\n ", nextWriteIdx, readIdx);
+
+    HAL_UART_Transmit_IT(uart, diagnosticMsg, len);
   }
 
   // incrementing writeidx

@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "File_005_ObjNum_004_480x320_6_18_26.h"
 #include "File_006_ObjNum_005_480x320_6_18_26_C.h"
 #include "File_072_ObjNum_135_480x320_6_18_26.h"
 #include "alarm.h"
@@ -166,16 +167,23 @@ int main(void) {
   HAL_UART_Transmit(&huart2, (uint8_t *)"CAN protocol initialized\n", 25,
                     HAL_MAX_DELAY);
 
+  // initializing switches
+  SWITCHES_Init(&hcan, &huart2);
+
   // starting timer for switches interrupt (every 100ms)
   HAL_TIM_Base_Start_IT(&htim2);
 
-  HAL_UART_Transmit(&huart2, (uint8_t *)"Switches interrupt enabled\n", 27,
-                    HAL_MAX_DELAY);
+  HAL_UART_Transmit(&huart2,
+                    (uint8_t *)"Switches interrupt enabled and initialized\n",
+                    43, HAL_MAX_DELAY);
 
   // final logging message
   HAL_UART_Transmit(&huart2,
                     (uint8_t *)"Successfully initialized all interfaces\n", 40,
                     HAL_MAX_DELAY);
+
+  // setting background to black image
+  ILI9488_SetBackground(&hspi1, &File_005_ObjNum_004_480x320_6_18_26);
 
   // --- debugging --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
 
@@ -230,60 +238,64 @@ int main(void) {
   //                             ));
   //   HAL_Delay(1000);
 
-//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5, (uint8_t *)"RED", 3, false
-// #if COLOUR_ENABLED
-//                             ,
-//                             COLOR_RED
-// #endif
-//                             ));
-//
-//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 1), (uint8_t *)"GREEN", 5,
-//                             false
-// #if COLOUR_ENABLED
-//                             ,
-//                             COLOR_GREEN
-// #endif
-//                             ));
-//
-//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 2), (uint8_t *)"BLUE", 4, false
-// #if COLOUR_ENABLED
-//                             ,
-//                             COLOR_BLUE
-// #endif
-//                             ));
-//
-//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 3), (uint8_t *)"YELLOW", 6,
-//                             false
-// #if COLOUR_ENABLED
-//                             ,
-//                             COLOR_YELLOW
-// #endif
-//                             ));
-//
-//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 4), (uint8_t *)"CYAN", 4, false
-// #if COLOUR_ENABLED
-//                             ,
-//                             COLOR_CYAN
-// #endif
-//                             ));
-//
-//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 5), (uint8_t *)"PURPLE", 6,
-//                             false
-// #if COLOUR_ENABLED
-//                             ,
-//                             COLOR_PURPLE
-// #endif
-//                             ));
-//
-//   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), (uint8_t *)"WHITE", 5,
-//                             false
-// #if COLOUR_ENABLED
-//                             ,
-//                             COLOR_WHITE
-// #endif
-//                             ));
-//   HAL_Delay(1000);
-//
+  //   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5, (uint8_t *)"RED", 3, false
+  // #if COLOUR_ENABLED
+  //                             ,
+  //                             COLOR_RED
+  // #endif
+  //                             ));
+  //
+  //   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 1), (uint8_t *)"GREEN", 5,
+  //                             false
+  // #if COLOUR_ENABLED
+  //                             ,
+  //                             COLOR_GREEN
+  // #endif
+  //                             ));
+  //
+  //   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 2), (uint8_t *)"BLUE", 4,
+  //   false
+  // #if COLOUR_ENABLED
+  //                             ,
+  //                             COLOR_BLUE
+  // #endif
+  //                             ));
+  //
+  //   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 3), (uint8_t *)"YELLOW",
+  //   6,
+  //                             false
+  // #if COLOUR_ENABLED
+  //                             ,
+  //                             COLOR_YELLOW
+  // #endif
+  //                             ));
+  //
+  //   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 4), (uint8_t *)"CYAN", 4,
+  //   false
+  // #if COLOUR_ENABLED
+  //                             ,
+  //                             COLOR_CYAN
+  // #endif
+  //                             ));
+  //
+  //   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 5), (uint8_t *)"PURPLE",
+  //   6,
+  //                             false
+  // #if COLOUR_ENABLED
+  //                             ,
+  //                             COLOR_PURPLE
+  // #endif
+  //                             ));
+  //
+  //   HAL_SPIN(ILI9488_BlitText(&hspi1, 0, 5 + (40 * 6), (uint8_t *)"WHITE", 5,
+  //                             false
+  // #if COLOUR_ENABLED
+  //                             ,
+  //                             COLOR_WHITE
+  // #endif
+  //                             ));
+  //   HAL_Delay(1000);
+  //
   // updating watchdog to 6.55s for main loop
   // this value is safe when doing extreme buffer overloading stress testing
   hiwdg.Init.Prescaler = IWDG_PRESCALER_64;
@@ -374,7 +386,7 @@ static void MX_CAN_Init(void) {
   hcan.Init.TimeSeg1 = CAN_BS1_13TQ;
   hcan.Init.TimeSeg2 = CAN_BS2_2TQ;
   hcan.Init.TimeTriggeredMode = DISABLE;
-  hcan.Init.AutoBusOff = DISABLE;
+  hcan.Init.AutoBusOff = ENABLE;
   hcan.Init.AutoWakeUp = DISABLE;
   hcan.Init.AutoRetransmission = ENABLE;
   hcan.Init.ReceiveFifoLocked = DISABLE;
@@ -629,10 +641,10 @@ static void MX_DMA_Init(void) {
 
   /* DMA interrupt init */
   /* DMA1_Ch1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Ch1_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Ch1_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(DMA1_Ch1_IRQn);
   /* DMA1_Ch2_3_DMA2_Ch1_2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Ch2_3_DMA2_Ch1_2_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Ch2_3_DMA2_Ch1_2_IRQn, 1, 0);
   HAL_NVIC_EnableIRQ(DMA1_Ch2_3_DMA2_Ch1_2_IRQn);
 }
 

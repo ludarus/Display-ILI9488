@@ -3,7 +3,6 @@
  */
 
 #include "display-ili9488.h"
-#include "File_005_ObjNum_004_480x320_6_18_26.h"
 #include "font.h"
 #include "tables.h"
 
@@ -1374,10 +1373,6 @@ BrightnessInfo_t ILI9488_Init(SPI_HandleTypeDef *spi,
 
   // display on
   ILI9488_Cmd(spi, DCMD_DISON);
-
-  // initializing background to empty image
-  HAL_SPIN(ILI9488_SetBackground(
-      spi, (Image_t *)&File_005_ObjNum_004_480x320_6_18_26));
 
   return ILI9488_BrightnessInit(spi, backlightTimer);
 }

@@ -17,7 +17,7 @@
 /* CONFIG */
 // ------------------------------------
 // flag to enable or disable colour
-#define COLOUR_ENABLED 1
+#define COLOUR_ENABLED 0
 // ------------------------------------
 /* CONFIG */
 

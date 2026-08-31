@@ -12,7 +12,9 @@
 #include "commands-can.h"
 #include "display-ili9488.h"
 #include "stm32f0xx_hal.h"
+#include "stm32f0xx_hal_can.h"
 #include "stm32f0xx_hal_def.h"
+#include "stm32f0xx_hal_uart.h"
 #include "tables.h"
 #include <stdio.h>
 
@@ -607,6 +609,7 @@ CAN_CMDS_Init(CAN_HandleTypeDef *canInterface,
       HAL_CAN_ActivateNotification(canInterface, CAN_IT_RX_FIFO0_MSG_PENDING));
   HAL_TRY(
       HAL_CAN_ActivateNotification(canInterface, CAN_IT_RX_FIFO1_MSG_PENDING));
+  HAL_TRY(HAL_CAN_ActivateNotification(canInterface, CAN_IT_TX_MAILBOX_EMPTY));
 
   return HAL_OK;
 }
@@ -729,17 +732,15 @@ HAL_StatusTypeDef CAN_CMDS_Process(void) {
         uart, (uint8_t *)"Successfully wrote brightness to flash\n", 39);
   }
 
-  // logging the fill level of the queue
-  // if (readIdx != writeIdx) {
-  //   // logging
-  //   uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg), "%u, %u\n",
-  //                          writeIdx, readIdx);
-  //
-  //   HAL_UART_Transmit(uart, diagnosticMsg, len, HAL_MAX_DELAY);
-  // }
+  // limiting the number of commands to process to 5 so main loop still runs
+  // fast
+  uint8_t limit = 5;
 
   // iterating through every message
-  while (readIdx != writeIdx) {
+  while (readIdx != writeIdx && limit != 0) {
+
+    // decrementing limit
+    limit--;
 
     // reference to current message
     CanRxMessage_t *msg = &queue[readIdx];
@@ -790,10 +791,18 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
     CAN_RxHeaderTypeDef hdr;
     uint8_t data[8];
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &hdr, data);
+
+    HAL_UART_Transmit_IT(uart, "overflowing\n", 10);
   } else {
     // message to next spot in queue
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &queue[writeIdx].header,
                          queue[writeIdx].data);
+    // logging the fill level of the queue
+    // logging
+    // uint8_t len = snprintf((char *)diagnosticMsg, sizeof(diagnosticMsg),
+    //                        "%u\n ", readIdx - nextWriteIdx);
+    //
+    // HAL_UART_Transmit(uart, diagnosticMsg, len, HAL_MAX_DELAY);
   }
 
   // incrementing writeidx
